@@ -1,0 +1,215 @@
+﻿@model List<WebApp.Models.DTOs.SaleOutDto>
+
+@{
+    ViewData["Title"] = "Danh sách SaleOut";
+}
+
+<h3>Danh sách SaleOut</h3>
+<div>
+<form method="get" class="mb-3">
+    <div class="row">
+        <form method="get" asp-action="Index" class="mb-3">
+            <div class="row">
+                <div class="col-md-3">
+                    <select name="field" class="form-control">
+                        <option value="">Tất cả các trường</option>
+                        <option value="customerpono">Customer PO No</option>
+                        <option value="orderdate">Order Date</option>
+                        <option value="customername">Customer Name</option>
+                        <option value="productcode">Product Code</option>
+                        <option value="productname">Product Name</option>
+                        <option value="unit">Unit</option>
+                        <option value="quantity">Quantity</option>
+                        <option value="quantityperbox">Quantity Per Box</option>
+                        <option value="boxquantity">Box Quantity</option>
+                        <option value="price">Price</option>
+                        <option value="amount">Amount</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="keyword" class="form-control" placeholder="Nhập từ khóa..." />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                </div>
+            </div>
+        </form>  
+</form>
+</div>
+@* Các nút *@
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <!-- SỬA: nút Thêm mới chỉ mở modal chung, không target modal rỗng -->
+    <button type="button" id="btnCreate" class="btn btn-success">Thêm mới</button>
+
+    <form asp-controller="MasterProduct" asp-action="DownloadTemplate" method="get">
+        <button type="submit" class="btn btn-success">Tải file mẫu</button>
+    </form>
+
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
+        Tải lên file
+    </button>
+
+    <button type="button" class="btn btn-success">
+        Danh sách xuất thực tế
+    </button>
+
+    <button type="button" class="btn btn-success">
+        Báo cáo doanh thu
+    </button>
+</div>
+<div class="card-body">
+    <form method="get" class="d-flex align-items-center gap-2">
+        <input type="hidden" name="searchField" value="@ViewBag.SearchField" />
+        <input type="hidden" name="searchTerm" value="@ViewBag.SearchTerm" />
+
+        <label class="mb-0">Hiển thị</label>
+        <select name="pageSize" class="form-select w-auto" onchange="this.form.submit()">
+            @foreach (var size in new[] { 5, 10, 20, 50, 100 })
+            {
+                if (ViewBag.PageSize == size)
+                {
+                    <option value="@size" selected>@size</option>
+                }
+                else
+                {
+                    <option value="@size">@size</option>
+                }
+            }
+        </select>
+        <span class="mb-0">bản ghi trên mỗi trang</span>
+    </form>
+</div>
+<table class="table table-bordered table-striped" id="saleOutTable">
+    <thead>
+        <tr>
+            <th>STT</th>
+            <th>Số PO KH</th>
+            <th>Ngày đặt</th>
+            <th>Khách hàng</th>
+            <th>Sản phẩm</th>
+            <th>ĐVT</th>
+            <th>Đơn giá</th>
+            <th>Số lượng</th>
+            <th>Số lượng/Thùng</th>
+            <th>Số thùng</th>
+            <th>Thành tiền</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null && Model.Any())
+        {
+        var index = 1;
+        @foreach (var item in Model)
+        {
+            
+            <tr>
+                <td class="text-center">@index</td>
+                <td class="text-center">
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm btnEdit"
+                                data-id="@item.Id"
+                                title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                    <button type="button"
+                            class="btn btn-outline-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal-@item.Id">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+
+                    <!-- Modal xác nhận xóa -->
+                    <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@item.Id" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel-@item.Id">Xác nhận xóa</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Bạn có chắc chắn muốn xóa sản phẩm:<br />
+                                    <strong>@item.ProductCode - @item.ProductName</strong>?
+                                </div>
+                                <div class="modal-footer">
+                                    <form asp-action="Delete" method="post">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-danger">Có</button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>@item.CustomerPoNo</td>
+                <td>
+                    @{
+                        var dateStr = item.OrderDate.ToString();
+                        DateTime parsedDate;
+                        if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out parsedDate))
+                        {
+                            @parsedDate.ToString("dd/MM/yyyy")
+                        }
+                    }
+                </td>
+                <td>@item.CustomerName</td>
+                <td>@item.ProductCode (@item.ProductName)</td>
+                <td>@item.Unit</td>
+                <td>@item.Price</td>
+                <td>@item.Quantity</td>
+                <td>@item.QuantityPerBox</td>
+                <td>@item.BoxQuantity</td>
+                <td>@item.Amount</td>
+            </tr>
+            index++;
+            }
+        }
+    </tbody>
+</table>
+
+<div class="modal fade" id="saleOutModal" tabindex="-1" aria-labelledby="saleOutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="saleOutModalContent">
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Mở popup tạo mới
+            $("#btnCreate").click(function () {
+                $.get("@Url.Action("Create", "SaleOut")", function (html) {
+                    $("#saleOutModalContent").html(html);
+                    $("#saleOutModal").modal("show");
+                });
+            });
+             $(document).on("click", ".btnEdit", function () {
+            var id = $(this).data("id");
+            $.get("@Url.Action("Edit", "SaleOut")", { id: id }, function (html) {
+                $("#saleOutModalContent").html(html);
+                $("#saleOutModal").modal("show");
+            });
+        });
+            // Xử lý submit form trong modal
+            $(document).on("submit", "#Create, #Edit", function (e) {
+                e.preventDefault();
+                var form = $(this);
+                $.ajax({
+                    url: form.attr("action"),
+                    method: "POST",
+                    data: form.serialize(),
+                    success: function (result) {
+                        if (result.success) {
+                            $("#saleOutModal").modal("hide");
+                            location.reload(); // Reload danh sách
+                        } else {
+                            $("#saleOutModalContent").html(result); 
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}

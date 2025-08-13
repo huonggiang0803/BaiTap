@@ -1,0 +1,61 @@
+﻿@model WebApi.Models.DTOs.MasterProductUpdateDto
+
+@{
+    ViewData["Title"] = "Sửa sản phẩm";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h4 class="text-center mb-4">@ViewData["Title"]</h4>
+
+            <form asp-action="Edit" method="post" class="border p-4 rounded shadow-sm bg-white">
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="ProductCode" />
+                <input type="hidden" asp-for="ProductName" />
+
+                <div class="row">
+                    <!-- Cột trái -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Mã sản phẩm</label>
+                            <input class="form-control bg-light" value="@Model.ProductCode" disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tên sản phẩm</label>
+                            <input class="form-control bg-light" value="@Model.ProductName" disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Đơn vị tính</label>
+                            <input asp-for="Unit" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Quy cách</label>
+                            <input asp-for="Specification" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Số lượng/Thùng</label>
+                            <input asp-for="QuantityPerBox" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Trọng lượng</label>
+                            <input asp-for="ProductWeight" class="form-control" required />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary me-2">Lưu</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

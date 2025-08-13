@@ -1,0 +1,65 @@
+﻿@model WebApp.Models.DTOs.SaleOutDto
+@{
+    ViewBag.Title = "Sửa SaleOut";
+}
+
+<h2 class="text-center mb-4">Sửa SaleOut</h2>
+
+<form asp-action="Edit" method="post" class="container">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="row g-3">
+        <!-- Số PO Khách hàng -->
+        <div class="col-md-6">
+            <label class="form-label">Số PO Khách hàng <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" asp-for="CustomerPoNo" disabled />
+        </div>
+
+        <!-- Ngày đặt hàng -->
+        <div class="col-md-6">
+            <label class="form-label">Ngày đặt hàng <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" value="@Model.OrderDate.ToString("dd/MM/yyyy")" disabled />
+        </div>
+
+        <!-- Khách hàng -->
+        <div class="col-md-6">
+            <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" asp-for="CustomerName" disabled />
+        </div>
+
+        <!-- Sản phẩm -->
+        <div class="col-md-6">
+            <label class="form-label">Sản phẩm <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" value="@($"{Model.ProductCode} - {Model.ProductName}")" disabled />
+        </div>
+
+        <!-- Đơn vị tính -->
+        <div class="col-md-6">
+            <label class="form-label">Đơn vị tính <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" asp-for="Unit" disabled />
+        </div>
+
+        <!-- Đơn giá -->
+        <div class="col-md-6">
+            <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="Price" value="@Model.Price" step="0.01" required />
+        </div>
+
+        <!-- Số lượng -->
+        <div class="col-md-6">
+            <label class="form-label">Số lượng <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="Quantity" value="@Model.Quantity" step="0.01" required />
+        </div>
+
+        <!-- Số lượng/Thùng -->
+        <div class="col-md-6">
+            <label class="form-label">Số lượng/Thùng <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" value="@Model.QuantityPerBox" disabled />
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-end">
+        <a asp-action="Index" class="btn btn-secondary me-2">Đóng</a>
+        <button type="submit" class="btn btn-success">Lưu</button>
+    </div>
+</form>

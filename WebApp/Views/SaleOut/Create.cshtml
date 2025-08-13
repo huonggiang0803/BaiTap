@@ -1,0 +1,160 @@
+﻿@model WebApp.Models.DTOs.SaleOutCreateDto
+@using WebApp.Models.DTOs
+
+@{
+    var products = ViewBag.Products as List<ProductDropdownDto>;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">Tạo SaleOut</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <form id="createSaleOutForm" asp-action="Create" method="post">
+        <div class="row">
+            <div class="col-md-6">
+                <label>Số PO Khách hàng *</label>
+                <input asp-for="CustomerPoNo" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+                <label>Ngày đặt hàng *</label>
+                <input type="date" id="orderDatePicker" class="form-control" required />
+                <input type="hidden" name="OrderDate" id="orderDateInt" />
+            </div>
+
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <label>Khách hàng *</label>
+                <input asp-for="CustomerName" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+                <label>Sản phẩm *</label>
+                <select id="ProductId" name="ProductId" class="form-control">
+                    <option value="">-- Chọn sản phẩm --</option>
+                    @foreach (var product in ViewBag.Products as List<ProductDropdownDto>)
+                    {
+                        <option value="@product.Id"
+                                data-unit="@product.Unit"
+                                data-qty="@product.QuantityPerBox">
+                            @product.DisplayName
+                        </option>
+                    }
+                </select>
+
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <label>Đơn vị tính *</label>
+                <input asp-for="Unit" class="form-control" id="unitInput" readonly />
+            </div>
+            <div class="col-md-6">
+                <label>Đơn giá *</label>
+                <input asp-for="Price" class="form-control" type="number" step="0.01" required />
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <label>Số lượng *</label>
+                <input asp-for="Quantity" id="quantityInput" class="form-control" type="number" step="0.01" required />
+            </div>
+            <div class="col-md-4">
+                <label>Số lượng/Thùng *</label>
+                <input asp-for="QuantityPerBox" class="form-control" id="quantityPerBoxInput" />
+            </div>
+            <div class="col-md-2">
+                <label>Số thùng</label>
+                <input asp-for="BoxQuantity" class="form-control" id="boxCountInput" readonly />
+            </div>
+            <div class="col-md-2">
+                <label>Thành tiền</label>
+                <input asp-for="Amount" class="form-control" id="amountInput" readonly />
+            </div>
+
+        </div>
+
+        <div class="modal-footer mt-3">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button type="submit" class="btn btn-success">Lưu</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const productSelect = document.getElementById("ProductId");
+    const unitInput = document.getElementById("unitInput");
+    const qtyPerBoxInput = document.getElementById("quantityPerBoxInput");
+    const quantityInput = document.getElementById("quantityInput");
+    const boxCountInput = document.getElementById("boxCountInput");
+    const priceInput = document.querySelector('[name="Price"]');
+    const amountInput = document.getElementById("amountInput");
+    const dateVal = $("#orderDatePicker").val(); // dạng yyyy-MM-dd
+    if (dateVal) {
+        const dateInt = dateVal.replace(/-/g, ""); // bỏ dấu -
+        $("#orderDateInt").val(dateInt); 
+    }
+
+        function calculateBoxCount() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const quantityPerBox = parseFloat(qtyPerBoxInput.value) || 0;
+        if (quantityPerBox > 0) {
+            boxCountInput.value = Math.ceil(quantity / quantityPerBox); // làm tròn lên
+        } else {
+            boxCountInput.value = "";
+        }
+    }
+
+    function calculateAmount() {
+        const price = parseFloat(priceInput.value) || 0;
+        const quantity = parseFloat(quantityInput.value) || 0;
+        amountInput.value = (price * quantity).toFixed(2);
+    }
+
+    // Khi chọn sản phẩm
+    productSelect.addEventListener("change", function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const unit = selectedOption.getAttribute("data-unit");
+        const qtyPerBox = parseFloat(selectedOption.getAttribute("data-qty")) || 0;
+        unitInput.value = unit || "";
+        qtyPerBoxInput.value = qtyPerBox || "";
+        calculateBoxCount();
+        calculateAmount();
+    });
+
+    // Khi nhập số lượng hoặc đơn giá
+    quantityInput.addEventListener("input", () => { calculateBoxCount(); calculateAmount(); });
+    priceInput.addEventListener("input", calculateAmount);
+
+        $("#orderDatePicker").on("change", function () {
+        const dateVal = $(this).val(); // yyyy-MM-dd
+        if (dateVal) {
+            const dateInt = dateVal.replace(/-/g, ""); // yyyyMMdd
+            $("#orderDateInt").val(dateInt);
+        }
+    });
+    // Submit form
+    $("#createSaleOutForm").submit(function (e) {
+        e.preventDefault();
+         const dateVal = $("#orderDatePicker").val();
+        if (dateVal) {
+            $("#orderDateInt").val(dateVal.replace(/-/g, ""));
+        }
+        $.ajax({
+            url: '@Url.Action("Create", "SaleOut")',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.success) {
+                     window.location.href = '@Url.Action("Index", "SaleOut")';
+                } else {
+                    alert(res.message || "Có lỗi khi lưu");
+                }
+            }
+        });
+    });
+
+</script>

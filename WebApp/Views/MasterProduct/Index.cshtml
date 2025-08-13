@@ -1,0 +1,203 @@
+﻿@model List<WebApi.Models.DTOs.MasterProductDto>
+
+@{
+    ViewData["Title"] = "Danh sách sản phẩm";
+}
+<!-- Hiển thị thông báo thành công -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Hiển thị thông báo lỗi -->
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+@if (TempData["SuccessMessage"] != null)
+{
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+    <form method="get" class="row mb-3">
+        <div class="col-md-3">
+            <select name="field" class="form-select">
+                <option value="">Tất cả trường</option>
+                <option value="ProductCode">Mã sản phẩm</option>
+                <option value="ProductName">Tên sản phẩm</option>
+                <option value="Unit">Đơn vị tính</option>
+                <option value="Specification">Quy cách</option>
+                <option value="QuantityPerBox">Số lượng/thùng</option>
+                <option value="ProductWeight">Trọng lượng</option>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <input type="text" name="keyword" class="form-control" placeholder="Nhập từ khóa tìm kiếm..." />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+        </div>
+    </form>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">Thêm mới</button>
+
+        <a href="@Url.Action("DownloadTemplate", "MasterProduct")"
+           class="btn btn-success">
+            <i class="bi bi-download"></i> Tải file mẫu
+        </a>
+
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            Upload dữ liệu
+        </button>
+    </div>
+    <div class="card-body">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="searchField" value="@ViewBag.SearchField" />
+            <input type="hidden" name="searchTerm" value="@ViewBag.SearchTerm" />
+
+            <label class="mb-0">Hiển thị</label>
+            <select name="pageSize" class="form-select w-auto" onchange="this.form.submit()">
+                @foreach (var size in new[] { 5, 10, 20, 50, 100 })
+                {
+                    if (ViewBag.PageSize == size)
+                    {
+                        <option value="@size" selected>@size</option>
+                    }
+                    else
+                    {
+                        <option value="@size">@size</option>
+                    }
+                }
+            </select>
+            <span class="mb-0">bản ghi trên mỗi trang</span>
+        </form>
+    </div>
+
+    <!-- Bảng dữ liệu -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>STT</th>
+                    <th>Action</th>
+                    <th>Mã sản phẩm</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Đơn vị tính</th>
+                    <th>Quy cách</th>
+                    <th>Số lượng/Thùng</th>
+                    <th>Trọng lượng</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    var index = 1;
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="text-center">@index</td>
+                            <td class="text-center">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal-@item.Id">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+
+                                <!-- Modal xác nhận xóa -->
+                                <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@item.Id" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel-@item.Id">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn có chắc chắn muốn xóa sản phẩm:<br />
+                                                <strong>@item.ProductCode - @item.ProductName</strong>?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <form asp-action="Delete" method="post">
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="submit" class="btn btn-danger">Có</button>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@item.ProductCode</td>
+                            <td>@item.ProductName</td>
+                            <td>@item.Unit</td>
+                            <td>@item.Specification</td>
+                            <td>@item.QuantityPerBox</td>
+                            <td>@item.ProductWeight</td>
+                        </tr>
+                        index++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center">Không có dữ liệu</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+       
+        <div class="container mt-4">
+            <!-- Modal -->
+            <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="createModalLabel">Thêm sản phẩm mới</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+                        @await Html.PartialAsync("Create", new WebApi.Models.DTOs.MasterProductCreateDto())
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal upload -->
+            <!-- Modal upload -->
+            <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+<form asp-controller="MasterProduct" asp-action="Upload" method="post" enctype="multipart/form-data">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="uploadModalLabel">Tải lên file Excel</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="file" name="file" class="form-control" accept=".xlsx" required
+                                       onchange="document.getElementById('fileName').innerText = this.files[0]?.name" />
+                                <small id="fileName" class="text-muted"></small>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Tải lên</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+</div>

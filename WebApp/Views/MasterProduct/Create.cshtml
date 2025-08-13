@@ -1,0 +1,48 @@
+﻿@model WebApi.Models.DTOs.MasterProductCreateDto
+
+<form asp-action="Create" method="post">
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="ProductCode"></label>
+                    <input asp-for="ProductCode" class="form-control" />
+                    <span asp-validation-for="ProductCode" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Đơn vị <span class="text-danger">*</span></label>
+                    <input asp-for="Unit" class="form-control" />
+                    <span asp-validation-for="Unit" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Số lượng/Thùng <span class="text-danger">*</span></label>
+                    <input asp-for="QuantityPerBox" class="form-control" />
+                    <span asp-validation-for="QuantityPerBox" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
+                    <input asp-for="ProductName" class="form-control" />
+                    <span asp-validation-for="ProductName" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Quy cách <span class="text-danger">*</span></label>
+                    <input asp-for="Specification" class="form-control" />
+                    <span asp-validation-for="Specification" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Trọng lượng <span class="text-danger">*</span></label>
+                    <input asp-for="ProductWeight" class="form-control" />
+                    <span asp-validation-for="ProductWeight" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="submit" class="btn btn-success">Lưu</button>
+    </div>
+</form>
+
