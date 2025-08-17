@@ -1,4 +1,4 @@
-using WebApp.Service;
+﻿using WebApp.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +36,11 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage(); // Hiển thị chi tiết lỗi
+}
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

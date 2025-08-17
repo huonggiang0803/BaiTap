@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.InkML;
+﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.InkML;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Net.Http;
@@ -7,6 +8,7 @@ using WebApi.Data;
 using WebApi.Models.DTOs;
 using WebApi.Models.Entities;
 using WebApi.Service;
+using WebApp.Models.DTOs;
 
 namespace WebApi.Services
 {
@@ -142,26 +144,18 @@ namespace WebApi.Services
         public async Task<SaleOutDto> UpdateSaleOutAsync(Guid id, SaleOutUpdateDto dto)
         {
             var saleOut = await _context.SaleOuts
-                .Include(s => s.Product)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (saleOut == null)
                 throw new Exception("Không tìm thấy SaleOut");
 
-            // Chỉ update Quantity & Price
             saleOut.Quantity = dto.Quantity;
             saleOut.Price = dto.Price;
+            saleOut.QuantityPerBox = dto.QuantityPerBox;
 
-            // Tính lại Amount và BoxQuantity
-            if (saleOut.Product != null && saleOut.Product.QuantityPerBox > 0)
-            {
-                saleOut.BoxQuantity = Math.Ceiling(dto.Quantity / saleOut.Product.QuantityPerBox);
-            }
-            else
-            {
-                saleOut.BoxQuantity = 0;
-            }
-
+            saleOut.BoxQuantity = dto.QuantityPerBox > 0
+                ? Math.Ceiling(dto.Quantity / dto.QuantityPerBox)
+                : 0;
             saleOut.Amount = dto.Quantity * dto.Price;
 
             await _context.SaveChangesAsync();
@@ -177,15 +171,162 @@ namespace WebApi.Services
                 ProductName = saleOut.Product?.ProductName,
                 Unit = saleOut.Product?.Unit,
                 Quantity = saleOut.Quantity,
-                QuantityPerBox = saleOut.Product?.QuantityPerBox ?? 0,
+                QuantityPerBox = saleOut.QuantityPerBox,
                 BoxQuantity = saleOut.BoxQuantity,
                 Price = saleOut.Price,
                 Amount = saleOut.Amount
             };
         }
+        public async Task<List<SaleOutReportDto>> GetSaleOutReportAsync(int startDate, int endDate)
+        {
+            return await _context.SaleOutReport
+                .FromSqlInterpolated($"SELECT * FROM fnSaleOutReport({startDate}, {endDate})")
+                .ToListAsync();
+        }
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var entity = await _context.SaleOuts.FindAsync(id);
+            if (entity == null)
+                return false;
 
+            _context.SaleOuts.Remove(entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        public async Task<(bool IsSuccess, List<string> Errors)> ImportFromExcelAsync(IFormFile file)
+        {
+            var errors = new List<string>();
+            if (file == null || file.Length == 0)
+            {
+                errors.Add("File tải lên rỗng hoặc không tồn tại.");
+                return (false, errors);
+            }
 
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            stream.Position = 0;
 
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheet(1);
+            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // Skip header
+
+            // Lấy tất cả sản phẩm trong DB
+            var productsInDb = await _context.MasterProducts.ToListAsync();
+            var productDict = productsInDb.ToDictionary(p => p.ProductCode, p => p);
+
+            // Lưu PO + ProductId đã có
+            var existingSaleOuts = await _context.SaleOuts.ToListAsync();
+            var existingKeys = existingSaleOuts.Select(s => (s.CustomerPoNo, s.ProductId)).ToHashSet();
+
+            foreach (var row in rows)
+            {
+                var poNo = row.Cell(1).GetString().Trim();
+                var orderDateStr = row.Cell(2).GetString().Trim();
+                var customerName = row.Cell(3).GetString().Trim();
+                var productCode = row.Cell(4).GetString().Trim();
+                var unit = row.Cell(5).GetString().Trim();
+                var quantityStr = row.Cell(6).GetString().Trim();
+                var priceStr = row.Cell(7).GetString().Trim();
+                var quantityPerBoxStr = row.Cell(8).GetString().Trim();
+
+                // Validate
+                if (string.IsNullOrWhiteSpace(poNo))
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số PO khách hàng' không được để trống");
+
+                if (!DateTime.TryParse(orderDateStr, out DateTime orderDate))
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Ngày đặt hàng' phải là ngày hợp lệ");
+
+                if (string.IsNullOrWhiteSpace(customerName))
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Khách hàng' không được để trống");
+
+                if (string.IsNullOrWhiteSpace(productCode))
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Mã sản phẩm' không được để trống");
+
+                if (string.IsNullOrWhiteSpace(unit))
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Đơn vị tính' không được để trống");
+
+                if (!decimal.TryParse(quantityStr, out decimal quantity) || quantity <= 0)
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số lượng' phải lớn hơn 0");
+
+                if (!decimal.TryParse(priceStr, out decimal price) || price < 0)
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Price' phải >= 0");
+
+                if (!decimal.TryParse(quantityPerBoxStr, out decimal quantityPerBox) || quantityPerBox <= 0)
+                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số lượng/thùng' phải lớn hơn 0");
+
+                // Check sản phẩm tồn tại
+                if (!productDict.ContainsKey(productCode))
+                    errors.Add($"Dòng {row.RowNumber()}: Sản phẩm '{productCode}' không tồn tại trong hệ thống");
+
+                // Check PO + Product trùng
+                if (productDict.TryGetValue(productCode, out var product) &&
+                    existingKeys.Contains((poNo, product.Id)))
+                {
+                    errors.Add($"Dòng {row.RowNumber()}: Số PO '{poNo}' và Mã sản phẩm '{productCode}' đã có trên hệ thống");
+                }
+            }
+
+            if (errors.Any())
+                return (false, errors);
+
+            // Insert dữ liệu
+            foreach (var row in rows)
+            {
+                var poNo = row.Cell(1).GetString().Trim();
+                var orderDate = DateTime.Parse(row.Cell(2).GetString().Trim());
+                var customerName = row.Cell(3).GetString().Trim();
+                var productCode = row.Cell(4).GetString().Trim();
+                var unit = row.Cell(5).GetString().Trim();
+                var quantity = decimal.Parse(row.Cell(6).GetString().Trim());
+                var price = decimal.Parse(row.Cell(7).GetString().Trim());
+                var quantityPerBox = decimal.Parse(row.Cell(8).GetString().Trim());
+
+                var product = productDict[productCode];
+
+                var saleOut = new SaleOut
+                {
+                    Id = Guid.NewGuid(),
+                    CustomerPoNo = poNo,
+                    OrderDate = int.Parse(orderDate.ToString("yyyyMMdd")),
+                    CustomerName = customerName,
+                    ProductId = product.Id,
+                    Quantity = quantity,
+                    Price = price,
+                    Amount = quantity * price,
+                    QuantityPerBox = quantityPerBox,
+                    BoxQuantity = Math.Ceiling(quantity / quantityPerBox),
+                };
+
+                _context.SaleOuts.Add(saleOut);
+                existingKeys.Add((poNo, product.Id));
+            }
+
+            await _context.SaveChangesAsync();
+            return (true, errors);
+        }
+
+        public byte[] GenerateExcelTemplate()
+        {
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("SaleOutTemplate");
+
+            ws.Cell(1, 1).Value = "Số PO khách hàng";
+            ws.Cell(1, 2).Value = "Ngày đặt hàng (date)";
+            ws.Cell(1, 3).Value = "Khách hàng";
+            ws.Cell(1, 4).Value = "Mã sản phẩm";
+            ws.Cell(1, 5).Value = "Đơn vị tính";
+            ws.Cell(1, 6).Value = "Số lượng";
+            ws.Cell(1, 7).Value = "Số lượng/thùng";
+
+            var headerRange = ws.Range("A1:G1");
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
 
     }
 }
+

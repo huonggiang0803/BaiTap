@@ -11,7 +11,7 @@ namespace WebApi.Service
         Task<MasterProductDto> CreateMasterProductAsync(MasterProductCreateDto createDto);
         Task<bool> CheckDuplicateAsync(string code);
         Task<MasterProductDto> UpdateMasterProductAsync(Guid id, MasterProductUpdateDto updateDto);
-        Task DeleteMasterProductAsync(Guid id);
+        //Task DeleteMasterProductAsync(Guid id);
         Task<bool> DeleteAsync(Guid id);
         byte[] GenerateExcelTemplate();
         Task<(bool IsSuccess, List<string> Errors)> ImportFromExcelAsync(IFormFile file);

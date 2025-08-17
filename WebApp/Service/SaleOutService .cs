@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using WebApi.Models.DTOs;
 using WebApp.Models.DTOs;
@@ -50,35 +51,69 @@ public class SaleOutService : ISaleOutService
         return await response.Content.ReadFromJsonAsync<SaleOutDto>();
     }
 
-    public async Task<MasterProductDto> GetProductByCodeAsync(string productCode)
+    public async Task<SaleOutDto?> GetByIdAsync(Guid id)
     {
-        var response = await _httpClient.GetAsync($"/api/MasterProduct/code/{productCode}");
-        if (!response.IsSuccessStatusCode)
+        var response = await _httpClient.GetAsync($"api/SaleOut/{id}");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<MasterProductDto>(content);
-    }
-    public async Task<SaleOutDto> GetSaleOutByIdAsync(Guid id)
-    {
-        var client = httpClientFactory.CreateClient();
-        var response = await client.GetAsync($"api/SaleOut/{id}");
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<SaleOutDto>(content);
+        var json = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<SaleOutDto>(json);
     }
 
-    public async Task<SaleOutDto> UpdateSaleOutAsync(Guid id, SaleOutUpdateDto dto)
+    public async Task<bool> UpdateAsync(SaleOutUpdateDto dto)
     {
-        var client = httpClientFactory.CreateClient();
         var json = JsonConvert.SerializeObject(dto);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PutAsync($"https://localhost:44367/api/SaleOut/{id}", content);
-        response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<SaleOutDto>(result);
+        var response = await _httpClient.PutAsync($"api/SaleOut/{dto.Id}", content);
+        return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        var res = await _httpClient.DeleteAsync($"api/SaleOut/{id}");
+        return res.IsSuccessStatusCode;
+    }
+
+    public async Task<byte[]?> DownloadTemplateAsync()
+    {
+        var res = await _httpClient.GetAsync("api/SaleOut/download-template");
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadAsByteArrayAsync();
+    }
+
+    public async Task<(bool IsSuccess, List<string> Errors)> UploadExcelAsync(IFormFile file)
+    {
+        using var form = new MultipartFormDataContent();
+        var streamContent = new StreamContent(file.OpenReadStream());
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+        form.Add(streamContent, "file", file.FileName);
+
+        var response = await _httpClient.PostAsync("api/SaleOut/upload", form);
+        var json = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorObj = JsonConvert.DeserializeObject<UploadErrorResponse>(json);
+            return (false, errorObj.Errors);
+        }
+
+        return (true, new List<string>());
+    }
+
+    public async Task<byte[]?> DownloadRevenueReportAsync(int startDate, int endDate)
+    {
+        var url = $"api/SaleOut/revenue-report?startDate={startDate}&endDate={endDate}";
+        var res = await _httpClient.GetAsync(url);
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadAsByteArrayAsync();
+    }
+
+    public bool Exists(string productCode)
+    {
+        throw new NotImplementedException();
+    }
 
 }

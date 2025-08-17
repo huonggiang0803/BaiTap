@@ -61,17 +61,6 @@ namespace WebApi.Service
             await dbContext.SaveChangesAsync();
             return true;
         }
-
-        public async Task DeleteMasterProductAsync(Guid id)
-        {
-            var entity = await dbContext.MasterProducts.FindAsync(id);
-            if (entity == null)
-                throw new KeyNotFoundException($"Không tìm thấy sản phẩm với Id {id}");
-
-            dbContext.MasterProducts.Remove(entity);
-            await dbContext.SaveChangesAsync();
-        }
-
         public async Task<MasterProductDto> UpdateMasterProductAsync(Guid id, MasterProductUpdateDto updateDto)
         {
             var entity = await dbContext.MasterProducts.FindAsync(id);
@@ -94,7 +83,6 @@ namespace WebApi.Service
             return await dbContext.MasterProducts
                 .AnyAsync(p => p.ProductCode == code);
         }
-
 
         public async Task<IEnumerable<MasterProductDto>> GetAllMasterProductsAsync(string field = null, string keyword = null)
         {
@@ -231,7 +219,6 @@ namespace WebApi.Service
             if (errors.Any())
                 return (false, errors);
 
-            // Nếu không lỗi → Thêm vào DB
             foreach (var row in rows)
             {
                 var product = new MasterProduct

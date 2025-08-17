@@ -6,42 +6,48 @@
 
 <h3>Danh sách SaleOut</h3>
 <div>
-<form method="get" class="mb-3">
-    <div class="row">
-        <form method="get" asp-action="Index" class="mb-3">
-            <div class="row">
-                <div class="col-md-3">
-                    <select name="field" class="form-control">
-                        <option value="">Tất cả các trường</option>
-                        <option value="customerpono">Customer PO No</option>
-                        <option value="orderdate">Order Date</option>
-                        <option value="customername">Customer Name</option>
-                        <option value="productcode">Product Code</option>
-                        <option value="productname">Product Name</option>
-                        <option value="unit">Unit</option>
-                        <option value="quantity">Quantity</option>
-                        <option value="quantityperbox">Quantity Per Box</option>
-                        <option value="boxquantity">Box Quantity</option>
-                        <option value="price">Price</option>
-                        <option value="amount">Amount</option>
-                    </select>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    <form method="get" class="mb-3">
+        <div class="row">
+            <form method="get" asp-action="Index" class="mb-3">
+                <div class="row">
+                    <div class="col-md-3">
+                        <select name="field" class="form-control">
+                            <option value="">Tất cả các trường</option>
+                            <option value="customerpono">Customer PO No</option>
+                            <option value="orderdate">Order Date</option>
+                            <option value="customername">Customer Name</option>
+                            <option value="price">Price</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="keyword" class="form-control" placeholder="Nhập từ khóa..." />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <input type="text" name="keyword" class="form-control" placeholder="Nhập từ khóa..." />
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-                </div>
-            </div>
-        </form>  
-</form>
+            </form>
+    </form>
 </div>
 @* Các nút *@
 <div class="d-flex flex-wrap gap-2 mb-3">
-    <!-- SỬA: nút Thêm mới chỉ mở modal chung, không target modal rỗng -->
     <button type="button" id="btnCreate" class="btn btn-success">Thêm mới</button>
 
-    <form asp-controller="MasterProduct" asp-action="DownloadTemplate" method="get">
+    <form asp-controller="SaleOut" asp-action="DownloadTemplate" method="get">
         <button type="submit" class="btn btn-success">Tải file mẫu</button>
     </form>
 
@@ -49,13 +55,12 @@
         Tải lên file
     </button>
 
-    <button type="button" class="btn btn-success">
-        Danh sách xuất thực tế
-    </button>
-
-    <button type="button" class="btn btn-success">
+    <button type="button" class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#revenueReportModal">
         Báo cáo doanh thu
     </button>
+
 </div>
 <div class="card-body">
     <form method="get" class="d-flex align-items-center gap-2">
@@ -83,6 +88,7 @@
     <thead>
         <tr>
             <th>STT</th>
+            <th>Hành động</th>
             <th>Số PO KH</th>
             <th>Ngày đặt</th>
             <th>Khách hàng</th>
@@ -98,76 +104,177 @@
     <tbody>
         @if (Model != null && Model.Any())
         {
-        var index = 1;
-        @foreach (var item in Model)
-        {
-            
-            <tr>
-                <td class="text-center">@index</td>
-                <td class="text-center">
-                        <button type="button"
-                                class="btn btn-outline-primary btn-sm btnEdit"
-                                data-id="@item.Id"
-                                title="Chỉnh sửa">
+            var index = 1;
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="text-center">@index</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-primary btn-sm btnEdit" data-id="@item.Id" title="Chỉnh sửa">
                             <i class="fas fa-edit"></i>
                         </button>
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteModal-@item.Id">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
 
-                    <button type="button"
-                            class="btn btn-outline-danger btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#deleteModal-@item.Id">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                        <!-- Modal xác nhận xóa -->
+                        <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@item.Id" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteModalLabel-@item.Id">Xác nhận xóa</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Bạn có chắc chắn muốn xóa sản phẩm:<br />
+                                        <strong>@item.ProductCode - @item.ProductName</strong>?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <form asp-controller="SaleOut" asp-action="Delete" method="post">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-danger">Có</button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                        </form>
 
-                    <!-- Modal xác nhận xóa -->
-                    <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@item.Id" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="deleteModalLabel-@item.Id">Xác nhận xóa</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                                </div>
-                                <div class="modal-body">
-                                    Bạn có chắc chắn muốn xóa sản phẩm:<br />
-                                    <strong>@item.ProductCode - @item.ProductName</strong>?
-                                </div>
-                                <div class="modal-footer">
-                                    <form asp-action="Delete" method="post">
-                                        <input type="hidden" name="id" value="@item.Id" />
-                                        <button type="submit" class="btn btn-danger">Có</button>
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-                <td>@item.CustomerPoNo</td>
-                <td>
-                    @{
-                        var dateStr = item.OrderDate.ToString();
-                        DateTime parsedDate;
-                        if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out parsedDate))
-                        {
-                            @parsedDate.ToString("dd/MM/yyyy")
+                    </td>
+                    <td>@item.CustomerPoNo</td>
+                    <td>
+                        @{
+                            if (item.OrderDate > 0)
+                            {
+                                var orderDateStr = item.OrderDate.ToString("D8"); // 20250816
+                                if (DateTime.TryParseExact(orderDateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
+                                {
+                                    @parsedDate.ToString("dd/MM/yyyy")
+                                }
+                            }
                         }
-                    }
-                </td>
-                <td>@item.CustomerName</td>
-                <td>@item.ProductCode (@item.ProductName)</td>
-                <td>@item.Unit</td>
-                <td>@item.Price</td>
-                <td>@item.Quantity</td>
-                <td>@item.QuantityPerBox</td>
-                <td>@item.BoxQuantity</td>
-                <td>@item.Amount</td>
-            </tr>
-            index++;
+
+                    </td>
+                    <td>@item.CustomerName</td>
+                    <td>@item.ProductCode (@item.ProductName)</td>
+                    <td>@item.Unit</td>
+                    <td>@item.Price</td>
+                    <td>@item.Quantity</td>
+                    <td>@item.QuantityPerBox</td>
+                    <td>@item.BoxQuantity</td>
+                    <td>@item.Amount</td>
+                </tr>
+                index++;
             }
         }
     </tbody>
 </table>
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
 
+            <form asp-controller="SaleOut" asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalLabel">Tải lên file Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="file" name="file" class="form-control" accept=".xlsx" required onchange="document.getElementById('fileName').innerText = this.files[0]?.name" />
+                    <small id="fileName" class="text-muted"></small>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Tải lên</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="revenueReportModal" tabindex="-1" aria-labelledby="revenueReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0 rounded-3">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title d-flex align-items-center" id="revenueReportModalLabel">
+                    <i class="fas fa-chart-line me-2"></i> Báo cáo Doanh thu
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="revenueReportForm" asp-action="GetRevenueReport" method="get">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="startDate" class="form-label fw-semibold">📅 Từ ngày</label>
+                            <input type="date" id="startDate" class="form-control border-primary" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endDate" class="form-label fw-semibold">📅 Đến ngày</label>
+                            <input type="date" id="endDate" class="form-control border-primary" required />
+                        </div>
+                    </div>
+                    <input type="hidden" name="startDate" id="startDateFormatted" />
+                    <input type="hidden" name="endDate" id="endDateFormatted" />
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="fas fa-file-excel me-2"></i> Xuất báo cáo
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Đóng
+                    </button>
+                </div>
+            </form>
+            <script>
+                document.getElementById("revenueReportForm")
+                    .addEventListener("submit", function (e)
+                    {
+                        let startDateVal = document.getElementById("startDate").value;
+                        let endDateVal = document.getElementById("endDate").value;
+                        if (startDateVal && endDateVal)
+                        {
+                            document.getElementById("startDateFormatted").value = startDateVal.replaceAll("-", "");
+                            document.getElementById("endDateFormatted").value = endDateVal.replaceAll("-", "");
+                        }
+                });
+            </script>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="revenueReportModal" tabindex="-1" aria-labelledby="revenueReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form id="revenueReportForm" asp-action="GetRevenueReport" method="get">
+                <div class="mb-3">
+                    <label for="startDate">Từ ngày</label>
+                    <input type="date" id="startDate" class="form-control" required />
+                </div> <div class="mb-3">
+                    <label for="endDate">Đến ngày</label>
+                    <input type="date" id="endDate" class="form-control" required />
+                </div> <!-- Hidden inputs sẽ lưu giá trị yyyyMMdd -->
+                <input type="hidden" name="startDate" id="startDateFormatted" />
+                <input type="hidden" name="endDate" id="endDateFormatted" />
+                <button type="submit" class="btn btn-primary">Xuất báo cáo</button>
+            </form>
+            <script>
+                document.getElementById("revenueReportForm")
+                    .addEventListener("submit", function (e)
+                    {
+                        let startDateVal = document.getElementById("startDate").value;
+                        let endDateVal = document.getElementById("endDate").value;
+                        if (startDateVal && endDateVal)
+                        {
+                            document.getElementById("startDateFormatted").value = startDateVal.replaceAll("-", "");
+                            document.getElementById("endDateFormatted").value = endDateVal.replaceAll("-", "");
+                        }
+                    });
+            </script>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="saleOutModal" tabindex="-1" aria-labelledby="saleOutModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" id="saleOutModalContent">
@@ -178,38 +285,45 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // Mở popup tạo mới
+
+            // Mở popup Thêm mới
             $("#btnCreate").click(function () {
                 $.get("@Url.Action("Create", "SaleOut")", function (html) {
                     $("#saleOutModalContent").html(html);
                     $("#saleOutModal").modal("show");
                 });
             });
-             $(document).on("click", ".btnEdit", function () {
+                           $(document).on("click", ".btnEdit", function () {
             var id = $(this).data("id");
-            $.get("@Url.Action("Edit", "SaleOut")", { id: id }, function (html) {
-                $("#saleOutModalContent").html(html);
-                $("#saleOutModal").modal("show");
-            });
+                    $.get(`/SaleOut/Edit/${id}`, function(html) {
+            $("#saleOutModalContent").html(html);
+            $("#saleOutModal").modal("show");
         });
-            // Xử lý submit form trong modal
+
+        });
+
+            // Xử lý submit form trong modal (Create/Edit)
             $(document).on("submit", "#Create, #Edit", function (e) {
                 e.preventDefault();
                 var form = $(this);
+
                 $.ajax({
                     url: form.attr("action"),
                     method: "POST",
                     data: form.serialize(),
                     success: function (result) {
                         if (result.success) {
+                            // Đóng modal và reload danh sách
                             $("#saleOutModal").modal("hide");
-                            location.reload(); // Reload danh sách
+                            location.reload();
                         } else {
-                            $("#saleOutModalContent").html(result); 
+                            // Hiển thị lại form kèm validation errors
+                            $("#saleOutModalContent").html(result);
                         }
                     }
                 });
             });
+
         });
     </script>
 }

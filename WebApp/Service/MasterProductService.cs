@@ -19,16 +19,7 @@ namespace WebApp.Service
             this.httpClient = httpClient;
             this.httpClient.BaseAddress = new Uri("https://localhost:44367/api/");
         }
-        public async Task<IEnumerable<MasterProductDto>> GetAllMasterProductsAsync()
-        {
-            // gọi API dropdown (theo API bạn đã viết: GET api/MasterProduct/dropdown)
-            var resp = await httpClient.GetAsync("api/MasterProduct/dropdown");
-            resp.EnsureSuccessStatusCode();
-            var json = await resp.Content.ReadAsStringAsync();
-            // map JSON -> MasterProductDto (chú ý cấu trúc JSON trả về)
-            return JsonConvert.DeserializeObject<IEnumerable<MasterProductDto>>(json);
-        }
-
+       
         // Lấy danh sách sản phẩm
         public async Task<List<MasterProductDto>> GetAllMasterProductsAsync(string? searchKeyword = null)
         {
@@ -55,8 +46,7 @@ namespace WebApp.Service
 
         // Sửa sản phẩm
         public async Task<MasterProductDto?> UpdateMasterProductAsync(Guid id, MasterProductUpdateDto updateDto)
-        {
-            var response = await httpClient.PutAsJsonAsync($"MasterProduct/{id}", updateDto);
+        { var response = await httpClient.PutAsJsonAsync($"MasterProduct/{id}", updateDto);
             if (response.IsSuccessStatusCode)
             {
                 return await response.Content.ReadFromJsonAsync<MasterProductDto>();
@@ -70,32 +60,12 @@ namespace WebApp.Service
             return response.IsSuccessStatusCode;
         }
 
-        public async Task DeleteMasterProductAsync(Guid id)
-        {
-            var response = await httpClient.DeleteAsync($"MasterProduct/{id}");
-            response.EnsureSuccessStatusCode();
-        }
-
-        public bool Exists(string productCode)
-        {
-            var response = httpClient.GetAsync($"api/MasterProduct/Exists?productCode={productCode}").Result;
-            if (!response.IsSuccessStatusCode) return false;
-            var result = response.Content.ReadAsStringAsync().Result;
-            return bool.TryParse(result, out var exists) && exists;
-        }
-        public async Task<IEnumerable<MasterProductDto>> GetAllAsync()
-        {
-            var response = await httpClient.GetAsync("api/MasterProduct");
-            response.EnsureSuccessStatusCode();
-
+        public async Task<MasterProductDto> GetByIdAsync(Guid id) 
+        { var response = await httpClient.GetAsync($"MasterProduct/{id}");
+            if (!response.IsSuccessStatusCode) return null; 
             var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<IEnumerable<MasterProductDto>>(json);
-        }
+            return JsonConvert.DeserializeObject<MasterProductDto>(json); }
 
-        public Task<MasterProductDto> GetByIdAsync(Guid id)
-        {
-            throw new NotImplementedException();
-        }
         public async Task<byte[]> DownloadTemplateAsync()
         {
             var response = await httpClient.GetAsync("MasterProduct/download-template");
@@ -124,5 +94,15 @@ namespace WebApp.Service
 
             return (true, new List<string>());
         }
+
+        public async Task<bool> CheckDuplicateAsync(string productCode)
+        {
+            var response = await httpClient.GetAsync($"MasterProduct/check-duplicate?code={productCode}");
+            if (!response.IsSuccessStatusCode) return false;
+
+            var content = await response.Content.ReadAsStringAsync();
+            return bool.Parse(content);
+        }
+
     }
 }

@@ -50,19 +50,16 @@ namespace WebApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var products = await masterProductService.GetAllMasterProductsAsync();
-            var exists = products.Any(p =>
-                p.ProductCode.Equals(createDto.ProductCode, StringComparison.OrdinalIgnoreCase));
-
-            if (exists)
+            bool isDuplicate = await masterProductService.CheckDuplicateAsync(createDto.ProductCode);
+            if (isDuplicate)
             {
-                return Conflict(new { message = "Mã sản phẩm đã tồn tại." });
+                return Conflict(new { productCode = $"Mã sản phẩm '{createDto.ProductCode}' đã tồn tại." });
             }
 
-            var createdProduct = await masterProductService.CreateMasterProductAsync(createDto);
-            return CreatedAtAction(nameof(GetById), new { id = createdProduct.Id }, createdProduct);
+            var product = await masterProductService.CreateMasterProductAsync(createDto);
+            return CreatedAtAction(nameof(Create), new { id = product.Id }, product);
         }
-        [HttpGet("check-duplicate/{code}")]
+        [HttpGet("check-duplicate")]
         public async Task<IActionResult> CheckDuplicate(string code)
         {
             var isDuplicate = await masterProductService.CheckDuplicateAsync(code);

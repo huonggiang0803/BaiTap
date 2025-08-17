@@ -1,37 +1,28 @@
 ﻿@model List<WebApi.Models.DTOs.MasterProductDto>
-
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
-}
-<!-- Hiển thị thông báo thành công -->
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-<!-- Hiển thị thông báo lỗi -->
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
 }
 
 <div class="container mt-4">
     <h2>@ViewData["Title"]</h2>
-@if (TempData["SuccessMessage"] != null)
-{
-        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-}
 
+    <!-- Hiển thị thông báo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Form tìm kiếm -->
     <form method="get" class="row mb-3">
         <div class="col-md-3">
             <select name="field" class="form-select">
@@ -51,23 +42,19 @@
             <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
         </div>
     </form>
+
+    <!-- Action buttons -->
     <div class="d-flex flex-wrap gap-2 mb-3">
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">Thêm mới</button>
-
-        <a href="@Url.Action("DownloadTemplate", "MasterProduct")"
-           class="btn btn-success">
+        <a href="@Url.Action("DownloadTemplate", "MasterProduct")" class="btn btn-success">
             <i class="bi bi-download"></i> Tải file mẫu
         </a>
-
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
-            Upload dữ liệu
-        </button>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload dữ liệu</button>
     </div>
+
+    <!-- Chọn số bản ghi -->
     <div class="card-body">
         <form method="get" class="d-flex align-items-center gap-2">
-            <input type="hidden" name="searchField" value="@ViewBag.SearchField" />
-            <input type="hidden" name="searchTerm" value="@ViewBag.SearchTerm" />
-
             <label class="mb-0">Hiển thị</label>
             <select name="pageSize" class="form-select w-auto" onchange="this.form.submit()">
                 @foreach (var size in new[] { 5, 10, 20, 50, 100 })
@@ -87,7 +74,7 @@
     </div>
 
     <!-- Bảng dữ liệu -->
-    <div class="table-responsive">
+    <div class="table-responsive mt-3">
         <table class="table table-bordered table-striped">
             <thead class="table-dark text-center">
                 <tr>
@@ -110,13 +97,11 @@
                         <tr>
                             <td class="text-center">@index</td>
                             <td class="text-center">
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm" title="Chỉnh sửa">
+                                <button type="button" class="btn btn-outline-primary btn-sm btnEdit" data-id="@item.Id" title="Chỉnh sửa">
                                     <i class="fas fa-edit"></i>
-                                </a>
-                                <button type="button"
-                                        class="btn btn-outline-danger btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#deleteModal-@item.Id">
+                                </button>
+
+                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
 
@@ -125,8 +110,8 @@
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title" id="deleteModalLabel-@item.Id">Xác nhận xóa</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                                <h5 class="modal-title">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
                                                 Bạn có chắc chắn muốn xóa sản phẩm:<br />
@@ -161,43 +146,113 @@
                 }
             </tbody>
         </table>
-       
-        <div class="container mt-4">
-            <!-- Modal -->
-            <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="createModalLabel">Thêm sản phẩm mới</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                        </div>
-                        @await Html.PartialAsync("Create", new WebApi.Models.DTOs.MasterProductCreateDto())
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal upload -->
-            <!-- Modal upload -->
-            <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-<form asp-controller="MasterProduct" asp-action="Upload" method="post" enctype="multipart/form-data">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="uploadModalLabel">Tải lên file Excel</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="file" name="file" class="form-control" accept=".xlsx" required
-                                       onchange="document.getElementById('fileName').innerText = this.files[0]?.name" />
-                                <small id="fileName" class="text-muted"></small>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-primary">Tải lên</button>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
+    </div>
 </div>
+
+<!-- Modal Create -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm sản phẩm mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="createModalBody">
+                @await Html.PartialAsync("Create", new WebApi.Models.DTOs.MasterProductCreateDto())
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Chỉnh sửa sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editModalBody">
+                <!-- Nội dung form Edit sẽ được load bằng Ajax -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="MasterProduct" asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalLabel">Tải lên file Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="file" name="file" class="form-control" accept=".xlsx" required onchange="document.getElementById('fileName').innerText = this.files[0]?.name" />
+                    <small id="fileName" class="text-muted"></small>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Tải lên</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).on("submit", "#createForm", function (e) {
+            e.preventDefault();
+            var form = $(this);
+
+            $.ajax({
+                url: '/MasterProduct/Create',
+                type: 'POST',
+                data: form.serialize(),
+                success: function (result) {
+                    if (result.success) {
+                        $("#createModal").modal("hide");
+                        location.reload();
+                    } else {
+                        $("#createModalBody").html(result);
+                    }
+                },
+                error: function () {
+                    alert("Có lỗi xảy ra khi thêm mới!");
+                }
+            });
+        });
+
+        $(document).ready(function () {
+            $(document).on("click", ".btnEdit", function () {
+                var id = $(this).data("id");
+                $.get("/MasterProduct/Edit", { id: id }, function (html) {
+                    $("#editModalBody").html(html);
+                    $("#editModal").modal("show");
+                });
+            });
+            $(document).on("submit", "#editForm", function (e) {
+                e.preventDefault();
+                var form = $(this);
+                $.ajax({
+                    url: '/MasterProduct/Edit',
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function (result) {
+                        if (result.success) {
+                            $("#editModal").modal("hide");
+                            location.reload();
+                        } else {
+                            $("#editModalBody").html(result);
+                        }
+                    },
+                    error: function () {
+                        alert("Có lỗi xảy ra khi cập nhật!");
+                    }
+                });
+            });
+        });
+    </script>
+}

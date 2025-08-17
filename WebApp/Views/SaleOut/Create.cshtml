@@ -27,18 +27,7 @@
                     <input type="hidden" name="OrderDate" id="orderDateInt" />
                 </div>
                 <div class="col-md-6">
-                    <label>Khách hàng *</label>
-                    <input asp-for="CustomerName" class="form-control" required />
-                </div>
-            </div>
-        </div>
-
-        <!-- PHẦN 2: Thông tin sản phẩm & số liệu -->
-        <div class="mt-3">
-            <div class="row mb-2">
-                <div class="col-md-6">
-                    <label>Sản phẩm *</label>
-                    <select id="ProductId" name="ProductId" class="form-control">
+                    <label class="form-label">Sản phẩm <span class="text-danger">*</span></label>                    <select id="ProductId" name="ProductId" class="form-control">
                         <option value="">-- Chọn sản phẩm --</option>
                         @foreach (var product in ViewBag.Products as List<ProductDropdownDto>)
                         {
@@ -50,44 +39,68 @@
                         }
                     </select>
                 </div>
+                
                 <div class="col-md-6">
-                    <label>Đơn vị tính *</label>
+                    <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+                    <input asp-for="CustomerName" class="form-control" required />
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    <label class="form-label">Số lượng/thùng <span class="text-danger">*</span></label>
+                    <input asp-for="QuantityPerBox" class="form-control" id="quantityPerBoxInput" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Đơn vị tính<span class="text-danger">*</span></label>
                     <input asp-for="Unit" class="form-control" id="unitInput" readonly />
                 </div>
             </div>
 
             <div class="row mb-2">
                 <div class="col-md-6">
-                    <label>Đơn giá *</label>
+                    <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
                     <input asp-for="Price" class="form-control" type="number" step="0.01" required />
                 </div>
                 <div class="col-md-6">
-                    <label>Số lượng *</label>
+                    <label class="form-label">Số lượng<span class="text-danger">*</span></label>
                     <input asp-for="Quantity" id="quantityInput" class="form-control" type="number" step="0.01" required />
                 </div>
             </div>
 
             <div class="row mb-2">
-                <div class="col-md-4">
-                    <label>Số lượng/Thùng *</label>
-                    <input asp-for="QuantityPerBox" class="form-control" id="quantityPerBoxInput" />
-                </div>
-                <div class="col-md-4">
-                    <label>Số thùng</label>
-                    <input asp-for="BoxQuantity" class="form-control" id="boxCountInput" readonly />
-                </div>
-                <div class="col-md-4">
-                    <label>Thành tiền</label>
-                    <input asp-for="Amount" class="form-control" id="amountInput" readonly />
-                </div>
+                
             </div>
         </div>
-
+        <div class="col-md-4">
+            <input asp-for="BoxQuantity" class="form-control" id="boxCountInput" type="hidden" readonly />
+        </div>
+        <div class="col-md-4">
+            <input asp-for="Amount" class="form-control" id="amountInput" type="hidden" readonly />
+        </div>
         <div class="modal-footer mt-3">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
             <button type="submit" class="btn btn-success">Lưu</button>
         </div>
     </form>
+</div>
+<!-- Modal sửa sản phẩm -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Chỉnh sửa sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body" id="editModalBody">
+                <!-- Form sẽ được load ở đây -->
+                <div class="text-center py-3">
+                    <span class="spinner-border"></span> Đang tải...
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -148,7 +161,6 @@
                 }
             }
         });
-
         $("#CustomerPoNo").on("input", function () {
             $("#poNoError").text("");
         });

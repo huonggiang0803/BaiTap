@@ -100,7 +100,110 @@ namespace WebApp.Controllers
             ViewBag.Products = productsReload;
             return PartialView("Create", dto);
         }
-       
-       
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(Guid? id)
+        {
+            if (id == null) return BadRequest();
+
+            var saleOut = await _saleOutService.GetByIdAsync(id.Value);
+            if (saleOut == null) return NotFound();
+
+            var updateDto = new SaleOutUpdateDto
+            {
+                Id = saleOut.Id,
+                CustomerPoNo = saleOut.CustomerPoNo,
+                OrderDate = saleOut.OrderDate,
+                CustomerName = saleOut.CustomerName,
+                ProductCode = saleOut.ProductCode,
+                ProductName = saleOut.ProductName,
+                Unit = saleOut.Unit,
+                Quantity = saleOut.Quantity,
+                QuantityPerBox = saleOut.QuantityPerBox,
+                Price = saleOut.Price
+            };
+
+            return PartialView("Edit", updateDto);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var success = await _saleOutService.DeleteAsync(id);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = "Xóa sản phẩm thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Xóa sản phẩm thất bại!";
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(SaleOutUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return PartialView("Edit", dto);
+
+            var success = await _saleOutService.UpdateAsync(dto);
+            if (!success)
+            {
+                ModelState.AddModelError("", "Cập nhật thất bại!");
+                return PartialView("Edit", dto);
+            }
+
+            return Json(new { success = true, message = "Cập nhật thành công" });
+        }
+
+
+        public async Task<IActionResult> DownloadTemplate()
+        {
+            var fileBytes = await _saleOutService.DownloadTemplateAsync();
+
+            if (fileBytes == null)
+            {
+                TempData["Error"] = "Không thể tải file mẫu.";
+                return RedirectToAction("Index");
+            }
+
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "ProductTemplate.xlsx");
+        }
+        [HttpPost]
+        public async Task<IActionResult> Upload(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                ModelState.AddModelError("", "Vui lòng chọn file Excel.");
+                return View();
+            }
+
+            var (isSuccess, errors) = await _saleOutService.UploadExcelAsync(file);
+
+            if (!isSuccess)
+            {
+                ViewBag.Errors = errors;
+                return View();
+            }
+
+            TempData["SuccessMessage"] = "Upload thành công!";
+            return RedirectToAction("Index");
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetRevenueReport(int startDate, int endDate)
+        {
+            var fileBytes = await _saleOutService.DownloadRevenueReportAsync(startDate, endDate);
+            if (fileBytes == null || fileBytes.Length == 0)
+                return NotFound("Không tạo được báo cáo");
+
+            return File(fileBytes,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"BaoCaoDoanhThu_{startDate}_{endDate}.xlsx");
+        }
     }
 }

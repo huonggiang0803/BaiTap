@@ -1,65 +1,86 @@
-﻿@model WebApp.Models.DTOs.SaleOutDto
+﻿@model WebApp.Models.DTOs.SaleOutUpdateDto
+
 @{
-    ViewBag.Title = "Sửa SaleOut";
+    DateTime? orderDate = null;
+    if (Model.OrderDate > 0)
+    {
+        orderDate = DateTime.ParseExact(Model.OrderDate.ToString("D8"), "yyyyMMdd", null);
+    }
 }
+<div class="modal-body">
 
-<h2 class="text-center mb-4">Sửa SaleOut</h2>
+    <form id="Edit" asp-action="Edit" asp-controller="SaleOut" method="post">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="CustomerPoNo" />
+        <input type="hidden" asp-for="CustomerName" />
+        <input type="hidden" asp-for="ProductCode" />
+        <input type="hidden" asp-for="ProductName" />
+        <input type="hidden" asp-for="Unit" />
+        <input type="hidden" asp-for="OrderDate" id="OrderDateHidden" />
 
-<form asp-action="Edit" method="post" class="container">
-    <input type="hidden" asp-for="Id" />
-
-    <div class="row g-3">
-        <!-- Số PO Khách hàng -->
-        <div class="col-md-6">
-            <label class="form-label">Số PO Khách hàng <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" asp-for="CustomerPoNo" disabled />
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Số PO Khách hàng</label>
+                <input type="text" class="form-control" value="@Model.CustomerPoNo" readonly />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày đặt hàng</label>
+                <input type="date" class="form-control"
+                       id="OrderDateInput"
+                       value="@(orderDate.HasValue? orderDate.Value.ToString("yyyy-MM-dd") : "")" readonly />
+            </div>
         </div>
 
-        <!-- Ngày đặt hàng -->
-        <div class="col-md-6">
-            <label class="form-label">Ngày đặt hàng <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" value="@Model.OrderDate.ToString("dd/MM/yyyy")" disabled />
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Khách hàng</label>
+                <input type="text" class="form-control" value="@Model.CustomerName" readonly />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Sản phẩm</label>
+                <input type="text" class="form-control" value="@Model.ProductCode - @Model.ProductName" readonly />
+            </div>
         </div>
 
-        <!-- Khách hàng -->
-        <div class="col-md-6">
-            <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" asp-for="CustomerName" disabled />
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Đơn vị tính</label>
+                <input type="text" class="form-control" value="@Model.Unit" readonly />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Đơn giá</label>
+                <input asp-for="Price" class="form-control" step="0.01" />
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
         </div>
 
-        <!-- Sản phẩm -->
-        <div class="col-md-6">
-            <label class="form-label">Sản phẩm <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" value="@($"{Model.ProductCode} - {Model.ProductName}")" disabled />
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Số lượng</label>
+                <input asp-for="Quantity" class="form-control" step="0.01" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Số lượng/Thùng</label>
+                <input asp-for="QuantityPerBox" class="form-control" step="0.01" />
+            </div>
         </div>
 
-        <!-- Đơn vị tính -->
-        <div class="col-md-6">
-            <label class="form-label">Đơn vị tính <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" asp-for="Unit" disabled />
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button type="submit" class="btn btn-success">Lưu</button>
         </div>
-
-        <!-- Đơn giá -->
-        <div class="col-md-6">
-            <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="Price" value="@Model.Price" step="0.01" required />
-        </div>
-
-        <!-- Số lượng -->
-        <div class="col-md-6">
-            <label class="form-label">Số lượng <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="Quantity" value="@Model.Quantity" step="0.01" required />
-        </div>
-
-        <!-- Số lượng/Thùng -->
-        <div class="col-md-6">
-            <label class="form-label">Số lượng/Thùng <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" value="@Model.QuantityPerBox" disabled />
-        </div>
-    </div>
-
-    <div class="mt-4 d-flex justify-content-end">
-        <a asp-action="Index" class="btn btn-secondary me-2">Đóng</a>
-        <button type="submit" class="btn btn-success">Lưu</button>
-    </div>
-</form>
+    </form>
+</div>
+    @section Scripts {
+        <script>
+            $("#Edit").submit(function (e) {
+                // Trước khi submit, chuyển date sang int yyyyMMdd
+                var dateVal = $("#OrderDateInput").val(); // yyyy-MM-dd
+                if (dateVal) {
+                    var intVal = dateVal.replaceAll("-", ""); // 20250816
+                    $("#OrderDateHidden").val(intVal);
+                }
+            });
+        </script>
+    }

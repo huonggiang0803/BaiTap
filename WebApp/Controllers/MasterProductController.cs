@@ -46,31 +46,32 @@ namespace WebApp.Controllers
             ViewBag.SearchTerm = keyword;
             return View(pagedData);
         }
+        [HttpGet]
+        public async Task<JsonResult> CheckDuplicate(string productCode)
+        {
+            var exists = await _productService.CheckDuplicateAsync(productCode);
+            return Json(exists);
+        }
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return PartialView("Create", new MasterProductCreateDto());
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Create(MasterProductCreateDto model)
+        public async Task<IActionResult> Create(MasterProductCreateDto createDto)
         {
             if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+                return PartialView("Create", createDto);
 
-            var existing = await _productService.GetAllMasterProductsAsync(model.ProductCode);
-            if (existing.Any(p => p.ProductCode.Equals(model.ProductCode, StringComparison.OrdinalIgnoreCase)))
+            bool isDuplicate = await _productService.CheckDuplicateAsync(createDto.ProductCode);
+            if (isDuplicate)
             {
-                ModelState.AddModelError("ProductCode", $"Mã sản phẩm {model.ProductCode} đã tồn tại, vui lòng nhập lại.");
-                return View(model); 
+                ModelState.AddModelError("ProductCode", $"Mã sản phẩm '{createDto.ProductCode}' đã tồn tại.");
+                return PartialView("Create", createDto); // ✅ Trả về PartialView
             }
-
-            var result = await _productService.CreateMasterProductAsync(model);
-            if (result != null)
-            {
-                TempData["Success"] = "Thêm sản phẩm thành công!";
-                return RedirectToAction("Index");
-            }
-
-            ModelState.AddModelError("", "Lỗi khi thêm sản phẩm.");
-            return View(model);
+            var product = await _productService.CreateMasterProductAsync(createDto);
+            return Json(new { success = true, productId = product.Id });
         }
         // GET: MasterProduct/ConfirmDelete/5
 
@@ -91,14 +92,11 @@ namespace WebApp.Controllers
             return RedirectToAction("Index");
         }
 
+        [HttpGet]
         public async Task<IActionResult> Edit(Guid id)
         {
-            var products = await _productService.GetAllMasterProductsAsync();
-            var product = products.FirstOrDefault(p => p.Id == id);
-            if (product == null)
-            {
-                return NotFound();
-            }
+            var product = await _productService.GetByIdAsync(id);
+            if (product == null) return NotFound();
 
             var updateDto = new MasterProductUpdateDto
             {
@@ -108,33 +106,20 @@ namespace WebApp.Controllers
                 Unit = product.Unit,
                 Specification = product.Specification,
                 QuantityPerBox = product.QuantityPerBox ?? 0,
-                ProductWeight = product.ProductWeight ?? 0,
+                ProductWeight = product.ProductWeight ?? 0
             };
-
-            return View(updateDto);
+            return PartialView("Edit", updateDto);
         }
-
-        // POST: MasterProduct/Edit
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(MasterProductUpdateDto updateDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(updateDto);
-            }
-
-            var updatedProduct = await _productService.UpdateMasterProductAsync(updateDto.Id, updateDto);
-            if (updatedProduct == null)
-            {
-                ModelState.AddModelError("", "Không thể cập nhật sản phẩm. Vui lòng thử lại.");
-                return View(updateDto);
-            }
-
-            TempData["SuccessMessage"] = "Cập nhật sản phẩm thành công!";
-            return RedirectToAction(nameof(Index));
+        public async Task<IActionResult>
+            Edit(MasterProductUpdateDto updateDto) 
+        { if (!ModelState.IsValid) return PartialView("Edit", updateDto);
+            var result = await _productService.UpdateMasterProductAsync
+                (updateDto.Id, updateDto); if (result != null) 
+                return Json(new { success = true }); return Json(new { success = false }); 
         }
-       
+
+
         public async Task<IActionResult> DownloadTemplate()
         {
             var fileBytes = await _productService.DownloadTemplateAsync();

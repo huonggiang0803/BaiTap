@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApi.Models.Entities;
+using WebApp.Models.DTOs;
 
 namespace WebApi.Data
 {
@@ -10,6 +11,7 @@ namespace WebApi.Data
         {
         }
         public virtual DbSet<MasterProduct> MasterProducts { get; set; }
+        public virtual DbSet<SaleOutReportDto> SaleOutReport { get; set; }
 
         public virtual DbSet<SaleOut> SaleOuts { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -19,6 +21,9 @@ namespace WebApi.Data
                 .HasOne(s => s.Product)
                 .WithMany(p => p.SaleOuts)
                 .HasForeignKey(s => s.ProductId);
+            modelBuilder.Entity<SaleOutReportDto>().HasNoKey();
+            base.OnModelCreating(modelBuilder);
+
         }
     }
 }
