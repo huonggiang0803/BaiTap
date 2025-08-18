@@ -9,6 +9,7 @@ using WebApi.Models.DTOs;
 using WebApi.Models.Entities;
 using WebApi.Service;
 using WebApp.Models.DTOs;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WebApi.Services
 {
@@ -152,14 +153,12 @@ namespace WebApi.Services
             saleOut.Quantity = dto.Quantity;
             saleOut.Price = dto.Price;
             saleOut.QuantityPerBox = dto.QuantityPerBox;
-
             saleOut.BoxQuantity = dto.QuantityPerBox > 0
                 ? Math.Ceiling(dto.Quantity / dto.QuantityPerBox)
                 : 0;
             saleOut.Amount = dto.Quantity * dto.Price;
 
             await _context.SaveChangesAsync();
-
             return new SaleOutDto
             {
                 Id = saleOut.Id,
@@ -214,8 +213,8 @@ namespace WebApi.Services
             var productsInDb = await _context.MasterProducts.ToListAsync();
             var productDict = productsInDb.ToDictionary(p => p.ProductCode, p => p);
 
-            // Lưu PO + ProductId đã có
             var existingSaleOuts = await _context.SaleOuts.ToListAsync();
+            //kiểm tra trùng dữ liệu PO +sản phẩm.
             var existingKeys = existingSaleOuts.Select(s => (s.CustomerPoNo, s.ProductId)).ToHashSet();
 
             foreach (var row in rows)
@@ -231,38 +230,38 @@ namespace WebApi.Services
 
                 // Validate
                 if (string.IsNullOrWhiteSpace(poNo))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số PO khách hàng' không được để trống");
+                    errors.Add($"Trường 'Số PO khách hàng' không được để trống");
 
                 if (!DateTime.TryParse(orderDateStr, out DateTime orderDate))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Ngày đặt hàng' phải là ngày hợp lệ");
+                    errors.Add($"Trường 'Ngày đặt hàng' phải là ngày hợp lệ");
 
                 if (string.IsNullOrWhiteSpace(customerName))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Khách hàng' không được để trống");
+                    errors.Add($"Trường 'Khách hàng' không được để trống");
 
                 if (string.IsNullOrWhiteSpace(productCode))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Mã sản phẩm' không được để trống");
+                    errors.Add($"Trường 'Mã sản phẩm' không được để trống");
 
                 if (string.IsNullOrWhiteSpace(unit))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Đơn vị tính' không được để trống");
+                    errors.Add($"Trường 'Đơn vị tính' không được để trống");
 
                 if (!decimal.TryParse(quantityStr, out decimal quantity) || quantity <= 0)
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số lượng' phải lớn hơn 0");
+                    errors.Add($"Trường 'Số lượng' phải lớn hơn 0");
 
                 if (!decimal.TryParse(priceStr, out decimal price) || price < 0)
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Price' phải >= 0");
+                    errors.Add($"Trường 'Price' phải >= 0");
 
                 if (!decimal.TryParse(quantityPerBoxStr, out decimal quantityPerBox) || quantityPerBox <= 0)
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số lượng/thùng' phải lớn hơn 0");
+                    errors.Add($"Trường 'Số lượng/thùng' phải lớn hơn 0");
 
                 // Check sản phẩm tồn tại
                 if (!productDict.ContainsKey(productCode))
-                    errors.Add($"Dòng {row.RowNumber()}: Sản phẩm '{productCode}' không tồn tại trong hệ thống");
+                    errors.Add($"Sản phẩm '{productCode}' không tồn tại trong hệ thống");
 
                 // Check PO + Product trùng
                 if (productDict.TryGetValue(productCode, out var product) &&
                     existingKeys.Contains((poNo, product.Id)))
                 {
-                    errors.Add($"Dòng {row.RowNumber()}: Số PO '{poNo}' và Mã sản phẩm '{productCode}' đã có trên hệ thống");
+                    errors.Add($"Số PO '{poNo}' và Mã sản phẩm '{productCode}' đã có trên hệ thống");
                 }
             }
 
@@ -316,9 +315,9 @@ namespace WebApi.Services
             ws.Cell(1, 4).Value = "Mã sản phẩm";
             ws.Cell(1, 5).Value = "Đơn vị tính";
             ws.Cell(1, 6).Value = "Số lượng";
-            ws.Cell(1, 7).Value = "Số lượng/thùng";
-
-            var headerRange = ws.Range("A1:G1");
+            ws.Cell(1, 7).Value = "Đơn giá";
+            ws.Cell(1, 8).Value = "Số lượng/thùng";
+            var headerRange = ws.Range("A1:I1");
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
 

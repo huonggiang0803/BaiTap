@@ -8,6 +8,7 @@ namespace WebApi.Service
     public interface IMasterProductService
     {
         Task<IEnumerable<MasterProductDto>> GetAllMasterProductsAsync(string field = null, string keyword = null);
+        Task<MasterProductDto?> GetByIdAsync(Guid id);
         Task<MasterProductDto> CreateMasterProductAsync(MasterProductCreateDto createDto);
         Task<bool> CheckDuplicateAsync(string code);
         Task<MasterProductDto> UpdateMasterProductAsync(Guid id, MasterProductUpdateDto updateDto);

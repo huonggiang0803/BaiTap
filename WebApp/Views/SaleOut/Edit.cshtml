@@ -7,6 +7,10 @@
         orderDate = DateTime.ParseExact(Model.OrderDate.ToString("D8"), "yyyyMMdd", null);
     }
 }
+<div class="modal-header">
+    <h5 class="modal-title">Sửa SaleOut</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
 <div class="modal-body">
 
     <form id="Edit" asp-action="Edit" asp-controller="SaleOut" method="post">
@@ -76,7 +80,7 @@
         <script>
             $("#Edit").submit(function (e) {
                 // Trước khi submit, chuyển date sang int yyyyMMdd
-                var dateVal = $("#OrderDateInput").val(); // yyyy-MM-dd
+                var dateVal = $("#OrderDateInput").val(); 
                 if (dateVal) {
                     var intVal = dateVal.replaceAll("-", ""); // 20250816
                     $("#OrderDateHidden").val(intVal);

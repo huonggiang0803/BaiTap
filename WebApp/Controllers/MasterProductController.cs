@@ -68,7 +68,7 @@ namespace WebApp.Controllers
             if (isDuplicate)
             {
                 ModelState.AddModelError("ProductCode", $"Mã sản phẩm '{createDto.ProductCode}' đã tồn tại.");
-                return PartialView("Create", createDto); // ✅ Trả về PartialView
+                return PartialView("Create", createDto); 
             }
             var product = await _productService.CreateMasterProductAsync(createDto);
             return Json(new { success = true, productId = product.Id });
@@ -134,29 +134,43 @@ namespace WebApp.Controllers
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "ProductTemplate.xlsx");
         }
+        //[HttpPost]
+        //public async Task<IActionResult> Upload(IFormFile file)
+        //{
+        //    if (file == null || file.Length == 0)
+        //    {
+        //        ModelState.AddModelError("", "Vui lòng chọn file Excel.");
+        //        return View();
+        //    }
+
+        //    var (isSuccess, errors) = await _productService.UploadExcelAsync(file);
+
+        //    if (!isSuccess)
+        //    {
+        //        ViewBag.Errors = errors;
+        //        return View();
+        //    }
+
+        //    TempData["SuccessMessage"] = "Upload thành công!";
+        //    return RedirectToAction("Index");
+        //}
         [HttpPost]
         public async Task<IActionResult> Upload(IFormFile file)
         {
-            if (file == null || file.Length == 0)
-            {
-                ModelState.AddModelError("", "Vui lòng chọn file Excel.");
-                return View();
-            }
-
             var (isSuccess, errors) = await _productService.UploadExcelAsync(file);
 
-            if (!isSuccess)
+            if (errors.Any())
             {
-                ViewBag.Errors = errors;
-                return View();
+                TempData["UploadErrors"] = string.Join(";", errors);
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Upload thành công!";
             }
 
-            TempData["SuccessMessage"] = "Upload thành công!";
             return RedirectToAction("Index");
         }
+
     }
-
-
-
 }
 

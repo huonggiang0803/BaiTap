@@ -121,15 +121,12 @@ namespace WebApi.Service
                 }
                 else
                 {
+                    // Search trong tất cả các cột string
                     query = query.Where(p =>
-                        typeof(MasterProduct).GetProperties()
-                        .Where(prop => prop.PropertyType == typeof(string))
-                        .Any(prop =>
-                            EF.Functions.Like(
-                                EF.Property<string>(p, prop.Name).ToLower(),
-                                $"%{keyword}%"
-                            )
-                        )
+                        EF.Functions.Like(p.ProductCode.ToLower(), $"%{keyword}%") ||
+                        EF.Functions.Like(p.ProductName.ToLower(), $"%{keyword}%") ||
+                        EF.Functions.Like(p.Unit.ToLower(), $"%{keyword}%") ||
+                        EF.Functions.Like(p.Specification.ToLower(), $"%{keyword}%")
                     );
                 }
             }
@@ -145,6 +142,22 @@ namespace WebApi.Service
                     ProductWeight = p.ProductWeight
                 })
                 .ToListAsync();
+        }
+        public async Task<MasterProductDto?> GetByIdAsync(Guid id)
+        {
+            return await dbContext.MasterProducts
+                .Where(p => p.Id == id)
+                .Select(p => new MasterProductDto
+                {
+                    Id = p.Id,
+                    ProductCode = p.ProductCode,
+                    ProductName = p.ProductName,
+                    Unit = p.Unit, 
+                    Specification = p.Specification,
+                    QuantityPerBox = p.QuantityPerBox,
+                    ProductWeight = p.ProductWeight
+                })
+                .FirstOrDefaultAsync();
         }
         public byte[] GenerateExcelTemplate()
         {
@@ -185,8 +198,8 @@ namespace WebApi.Service
             stream.Position = 0;
 
             using var workbook = new XLWorkbook(stream);
-            var worksheet = workbook.Worksheet(1); // Lấy sheet đầu tiên
-            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // Bỏ dòng tiêu đề
+            var worksheet = workbook.Worksheet(1); 
+            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); 
 
             foreach (var row in rows)
             {
@@ -199,17 +212,17 @@ namespace WebApi.Service
 
                 // Kiểm tra không để trống
                 if (string.IsNullOrWhiteSpace(productCode))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Mã sản phẩm' không được để trống");
+                    errors.Add($"Trường 'Mã sản phẩm' không được để trống");
                 if (string.IsNullOrWhiteSpace(productName))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Tên sản phẩm' không được để trống");
+                    errors.Add($"Trường 'Tên sản phẩm' không được để trống");
                 if (string.IsNullOrWhiteSpace(unit))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Đơn vị' không được để trống");
+                    errors.Add($"Trường 'Đơn vị' không được để trống");
                 if (string.IsNullOrWhiteSpace(specification))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Quy cách' không được để trống");
+                    errors.Add($"Trường 'Quy cách' không được để trống");
                 if (string.IsNullOrWhiteSpace(quantityPerBox))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Số lượng/Thùng' không được để trống");
+                    errors.Add($"Trường 'Số lượng/Thùng' không được để trống");
                 if (string.IsNullOrWhiteSpace(productWeight))
-                    errors.Add($"Dòng {row.RowNumber()}: Trường 'Trọng lượng' không được để trống");
+                    errors.Add($"Trường 'Trọng lượng' không được để trống");
 
                 // Kiểm tra trùng mã sản phẩm trong DB
                 if (await dbContext.MasterProducts.AnyAsync(p => p.ProductCode == productCode))

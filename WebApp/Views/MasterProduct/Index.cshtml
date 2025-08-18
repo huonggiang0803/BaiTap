@@ -2,7 +2,17 @@
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
 }
-
+@if (TempData["UploadErrors"] != null)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in TempData["UploadErrors"].ToString().Split(";"))
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
 <div class="container mt-4">
     <h2>@ViewData["Title"]</h2>
 
@@ -146,6 +156,37 @@
                 }
             </tbody>
         </table>
+        <!-- Phân trang -->
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <!-- Nút Previous -->
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link"
+                           href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize, field = ViewBag.SearchField, keyword = ViewBag.SearchTerm })">
+                            Previous
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Index", new { page = i, pageSize = ViewBag.PageSize, field = ViewBag.SearchField, keyword = ViewBag.SearchTerm })">
+                                @i
+                            </a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link"
+                           href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize, field = ViewBag.SearchField, keyword = ViewBag.SearchTerm })">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+
     </div>
 </div>
 
@@ -224,7 +265,6 @@
                 }
             });
         });
-
         $(document).ready(function () {
             $(document).on("click", ".btnEdit", function () {
                 var id = $(this).data("id");

@@ -19,19 +19,6 @@ namespace WebApp.Service
             this.httpClient = httpClient;
             this.httpClient.BaseAddress = new Uri("https://localhost:44367/api/");
         }
-       
-        // Lấy danh sách sản phẩm
-        public async Task<List<MasterProductDto>> GetAllMasterProductsAsync(string? searchKeyword = null)
-        {
-            string url = "MasterProduct";
-            if (!string.IsNullOrEmpty(searchKeyword))
-            {
-                url += $"?searchKeyword={Uri.EscapeDataString(searchKeyword)}";
-            }
-
-            var products = await httpClient.GetFromJsonAsync<List<MasterProductDto>>(url);
-            return products ?? new List<MasterProductDto>();
-        }
 
         // Thêm sản phẩm
         public async Task<MasterProductDto?> CreateMasterProductAsync(MasterProductCreateDto createDto)

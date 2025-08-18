@@ -63,15 +63,15 @@ namespace WebApp.Controllers
         public async Task<IActionResult> Create(SaleOutCreateDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.CustomerPoNo) ||
-           dto.OrderDate <= 0 ||
-           string.IsNullOrWhiteSpace(dto.CustomerName) ||
-           dto.ProductId == Guid.Empty ||
-           string.IsNullOrWhiteSpace(dto.Unit) ||
-           dto.Price <= 0 ||
-           dto.Quantity <= 0)
-        {
+               dto.OrderDate <= 0 ||
+               string.IsNullOrWhiteSpace(dto.CustomerName) ||
+               dto.ProductId == Guid.Empty ||
+               string.IsNullOrWhiteSpace(dto.Unit) ||
+               dto.Price <= 0 ||
+               dto.Quantity <= 0)
+            {
             return Json(new { success = false, message = "Vui lòng nhập đầy đủ thông tin." });
-        }
+            }
             var duplicate = await _saleOutService.CheckDuplicatePoNoAsync(dto.CustomerPoNo);
             if (duplicate)
             {
@@ -84,7 +84,6 @@ namespace WebApp.Controllers
                 ViewBag.Products = products;
                 return PartialView("Create", dto);
             }
-
             // Lưu dữ liệu
             var newRecord = await _saleOutService.CreateSaleOutAsync(dto);
 
@@ -172,28 +171,45 @@ namespace WebApp.Controllers
 
             return File(fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "ProductTemplate.xlsx");
+                "SaleOutTemp.xlsx");
         }
+        //[HttpPost]
+        //public async Task<IActionResult> Upload(IFormFile file)
+        //{
+        //    if (file == null || file.Length == 0)
+        //    {
+        //        ModelState.AddModelError("", "Vui lòng chọn file Excel.");
+        //        return View();
+        //    }
+
+        //    var (isSuccess, errors) = await _saleOutService.UploadExcelAsync(file);
+
+        //    if (!isSuccess)
+        //    {
+        //        ViewBag.Errors = errors;
+        //        return View();
+        //    }
+
+        //    TempData["SuccessMessage"] = "Upload thành công!";
+        //    return RedirectToAction("Index");
+        //}
         [HttpPost]
         public async Task<IActionResult> Upload(IFormFile file)
         {
-            if (file == null || file.Length == 0)
-            {
-                ModelState.AddModelError("", "Vui lòng chọn file Excel.");
-                return View();
-            }
-
             var (isSuccess, errors) = await _saleOutService.UploadExcelAsync(file);
 
-            if (!isSuccess)
+            if (errors.Any())
             {
-                ViewBag.Errors = errors;
-                return View();
+                TempData["UploadErrors"] = string.Join(";", errors);
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Upload thành công!";
             }
 
-            TempData["SuccessMessage"] = "Upload thành công!";
             return RedirectToAction("Index");
         }
+
         [HttpGet]
         public async Task<IActionResult> GetRevenueReport(int startDate, int endDate)
         {

@@ -7,7 +7,6 @@ namespace WebApi.Service
     {
         Task<IEnumerable<SaleOutDto>> GetAllSaleOutAsync(string field = null, string keyword = null);
         Task<SaleOutDto> CreateSaleOutAsync(SaleOutCreateDto dto);
-        //Task<SaleOutDto?> GetSaleOutByIdAsync(Guid id);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> IsDuplicatePoNoAsync(string poNo);
         Task<SaleOutDto> UpdateSaleOutAsync(Guid id, SaleOutUpdateDto dto);

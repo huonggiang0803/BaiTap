@@ -3,7 +3,17 @@
 @{
     ViewData["Title"] = "Danh sách SaleOut";
 }
-
+@if (TempData["UploadErrors"] != null)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in TempData["UploadErrors"].ToString().Split(";"))
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
 <h3>Danh sách SaleOut</h3>
 <div>
     @if (TempData["SuccessMessage"] != null)
@@ -156,16 +166,15 @@
                                 }
                             }
                         }
-
                     </td>
                     <td>@item.CustomerName</td>
                     <td>@item.ProductCode (@item.ProductName)</td>
                     <td>@item.Unit</td>
-                    <td>@item.Price</td>
-                    <td>@item.Quantity</td>
-                    <td>@item.QuantityPerBox</td>
-                    <td>@item.BoxQuantity</td>
-                    <td>@item.Amount</td>
+                    <td>@item.Price.ToString("N0")</td>    
+                    <td>@item.Quantity.ToString("N0")</td>
+                    <td>@item.QuantityPerBox.ToString("N0")</td>
+                    <td>@item.BoxQuantity.ToString("N0")</td>
+                    <td>@item.Amount.ToString("N0")</td>
                 </tr>
                 index++;
             }
@@ -243,38 +252,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="revenueReportModal" tabindex="-1" aria-labelledby="revenueReportModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <form id="revenueReportForm" asp-action="GetRevenueReport" method="get">
-                <div class="mb-3">
-                    <label for="startDate">Từ ngày</label>
-                    <input type="date" id="startDate" class="form-control" required />
-                </div> <div class="mb-3">
-                    <label for="endDate">Đến ngày</label>
-                    <input type="date" id="endDate" class="form-control" required />
-                </div> <!-- Hidden inputs sẽ lưu giá trị yyyyMMdd -->
-                <input type="hidden" name="startDate" id="startDateFormatted" />
-                <input type="hidden" name="endDate" id="endDateFormatted" />
-                <button type="submit" class="btn btn-primary">Xuất báo cáo</button>
-            </form>
-            <script>
-                document.getElementById("revenueReportForm")
-                    .addEventListener("submit", function (e)
-                    {
-                        let startDateVal = document.getElementById("startDate").value;
-                        let endDateVal = document.getElementById("endDate").value;
-                        if (startDateVal && endDateVal)
-                        {
-                            document.getElementById("startDateFormatted").value = startDateVal.replaceAll("-", "");
-                            document.getElementById("endDateFormatted").value = endDateVal.replaceAll("-", "");
-                        }
-                    });
-            </script>
-        </div>
-    </div>
-</div>
 <div class="modal fade" id="saleOutModal" tabindex="-1" aria-labelledby="saleOutModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" id="saleOutModalContent">
@@ -285,7 +262,6 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-
             // Mở popup Thêm mới
             $("#btnCreate").click(function () {
                 $.get("@Url.Action("Create", "SaleOut")", function (html) {
@@ -293,17 +269,16 @@
                     $("#saleOutModal").modal("show");
                 });
             });
-                           $(document).on("click", ".btnEdit", function () {
+            // Mở popup sửa
+            $(document).on("click", ".btnEdit", function () {
             var id = $(this).data("id");
                     $.get(`/SaleOut/Edit/${id}`, function(html) {
             $("#saleOutModalContent").html(html);
             $("#saleOutModal").modal("show");
         });
-
-        });
-
+    });
             // Xử lý submit form trong modal (Create/Edit)
-            $(document).on("submit", "#Create, #Edit", function (e) {
+            $(document).on("submit", "#Edit", function (e) {
                 e.preventDefault();
                 var form = $(this);
 
@@ -313,17 +288,14 @@
                     data: form.serialize(),
                     success: function (result) {
                         if (result.success) {
-                            // Đóng modal và reload danh sách
                             $("#saleOutModal").modal("hide");
                             location.reload();
                         } else {
-                            // Hiển thị lại form kèm validation errors
                             $("#saleOutModalContent").html(result);
                         }
                     }
                 });
             });
-
         });
     </script>
 }

@@ -31,15 +31,15 @@ namespace WebApi.Controllers
             var products = await masterProductService.GetAllMasterProductsAsync(field, keyword);
             return Ok(products);
         }
-      
-        // GET: api/MasterProduct/{id}
+
+        //GET: api/MasterProduct/{id}
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var products = await masterProductService.GetAllMasterProductsAsync();
-            var product = products.FirstOrDefault(x => x.Id == id);
+            var product = await masterProductService.GetByIdAsync(id);
             if (product == null)
                 return NotFound();
+
             return Ok(product);
         }
 
