@@ -86,7 +86,14 @@ namespace WebApp.Controllers
             }
             // Lưu dữ liệu
             var newRecord = await _saleOutService.CreateSaleOutAsync(dto);
-
+            if (newRecord != null)
+            {
+                TempData["SuccessMessage"] = "Tạo sản phẩm thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Tạo sản phẩm thất bại!";
+            }
             if (newRecord != null)
             {
                 return Json(new
@@ -149,6 +156,14 @@ namespace WebApp.Controllers
                 return PartialView("Edit", dto);
 
             var success = await _saleOutService.UpdateAsync(dto);
+            if (success != null)
+            {
+                TempData["SuccessMessage"] = "Cập nhật sản phẩm thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cập nhật sản phẩm thất bại!";
+            }
             if (!success)
             {
                 ModelState.AddModelError("", "Cập nhật thất bại!");
@@ -173,40 +188,26 @@ namespace WebApp.Controllers
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "SaleOutTemp.xlsx");
         }
-        //[HttpPost]
-        //public async Task<IActionResult> Upload(IFormFile file)
-        //{
-        //    if (file == null || file.Length == 0)
-        //    {
-        //        ModelState.AddModelError("", "Vui lòng chọn file Excel.");
-        //        return View();
-        //    }
-
-        //    var (isSuccess, errors) = await _saleOutService.UploadExcelAsync(file);
-
-        //    if (!isSuccess)
-        //    {
-        //        ViewBag.Errors = errors;
-        //        return View();
-        //    }
-
-        //    TempData["SuccessMessage"] = "Upload thành công!";
-        //    return RedirectToAction("Index");
-        //}
         [HttpPost]
         public async Task<IActionResult> Upload(IFormFile file)
         {
             var (isSuccess, errors) = await _saleOutService.UploadExcelAsync(file);
 
-            if (errors.Any())
+            if (!isSuccess && errors.Any())
             {
-                TempData["UploadErrors"] = string.Join(";", errors);
-            }
-            else
-            {
-                TempData["SuccessMessage"] = "Upload thành công!";
+                // Ghép lỗi thành text
+                var errorText = string.Join(Environment.NewLine, errors);
+                var errorBytes = System.Text.Encoding.UTF8.GetBytes(errorText);
+                var fileName = $"UploadErrors_{DateTime.Now:yyyyMMddHHmmss}.txt";
+
+                // Hiển thị thông báo đơn giản
+                TempData["ErrorMessage"] = "Upload thất bại! Vui lòng tải file lỗi để kiểm tra chi tiết.";
+
+                // Trả về file txt cho user tải
+                return File(errorBytes, "text/plain", fileName);
             }
 
+            TempData["SuccessMessage"] = "Upload thành công!";
             return RedirectToAction("Index");
         }
 

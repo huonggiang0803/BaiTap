@@ -213,56 +213,65 @@ namespace WebApi.Services
             var productsInDb = await _context.MasterProducts.ToListAsync();
             var productDict = productsInDb.ToDictionary(p => p.ProductCode, p => p);
 
+            // Lưu PO + ProductId đã có
             var existingSaleOuts = await _context.SaleOuts.ToListAsync();
             //kiểm tra trùng dữ liệu PO +sản phẩm.
             var existingKeys = existingSaleOuts.Select(s => (s.CustomerPoNo, s.ProductId)).ToHashSet();
+            int rowIndex = 1; // 1 là header, nên khi skip thì dòng đầu tiên dữ liệu = 2
 
-            foreach (var row in rows)
+            foreach (var row in rows.Select((value, index) => new { value, index }))
             {
-                var poNo = row.Cell(1).GetString().Trim();
-                var orderDateStr = row.Cell(2).GetString().Trim();
-                var customerName = row.Cell(3).GetString().Trim();
-                var productCode = row.Cell(4).GetString().Trim();
-                var unit = row.Cell(5).GetString().Trim();
-                var quantityStr = row.Cell(6).GetString().Trim();
-                var priceStr = row.Cell(7).GetString().Trim();
-                var quantityPerBoxStr = row.Cell(8).GetString().Trim();
+                int currentRow = row.index + 2; // +2 vì index=0 => dòng Excel số 2
+                var poNo = row.value.Cell(1).GetString().Trim();
+                var orderDateStr = row.value.Cell(2).GetString().Trim();
+                var customerName = row.value.Cell(3).GetString().Trim();
+                var productCode = row.value.Cell(4).GetString().Trim();
+                var unit = row.value.Cell(5).GetString().Trim();
+                var quantityStr = row.value.Cell(6).GetString().Trim();
+                var priceStr = row.value.Cell(7).GetString().Trim();
+                var quantityPerBoxStr = row.value.Cell(8).GetString().Trim();
+
+                var rowErrors = new List<string>();
 
                 // Validate
                 if (string.IsNullOrWhiteSpace(poNo))
-                    errors.Add($"Trường 'Số PO khách hàng' không được để trống");
+                    rowErrors.Add("Trường 'Số PO khách hàng' không được để trống");
 
                 if (!DateTime.TryParse(orderDateStr, out DateTime orderDate))
-                    errors.Add($"Trường 'Ngày đặt hàng' phải là ngày hợp lệ");
+                    rowErrors.Add("Trường 'Ngày đặt hàng' phải là ngày hợp lệ");
 
                 if (string.IsNullOrWhiteSpace(customerName))
-                    errors.Add($"Trường 'Khách hàng' không được để trống");
+                    rowErrors.Add("Trường 'Khách hàng' không được để trống");
 
                 if (string.IsNullOrWhiteSpace(productCode))
-                    errors.Add($"Trường 'Mã sản phẩm' không được để trống");
+                    rowErrors.Add("Trường 'Mã sản phẩm' không được để trống");
 
                 if (string.IsNullOrWhiteSpace(unit))
-                    errors.Add($"Trường 'Đơn vị tính' không được để trống");
+                    rowErrors.Add("Trường 'Đơn vị tính' không được để trống");
 
                 if (!decimal.TryParse(quantityStr, out decimal quantity) || quantity <= 0)
-                    errors.Add($"Trường 'Số lượng' phải lớn hơn 0");
+                    rowErrors.Add("Trường 'Số lượng' phải lớn hơn 0");
 
                 if (!decimal.TryParse(priceStr, out decimal price) || price < 0)
-                    errors.Add($"Trường 'Price' phải >= 0");
+                    rowErrors.Add("Trường 'Price' phải >= 0");
 
                 if (!decimal.TryParse(quantityPerBoxStr, out decimal quantityPerBox) || quantityPerBox <= 0)
-                    errors.Add($"Trường 'Số lượng/thùng' phải lớn hơn 0");
+                    rowErrors.Add("Trường 'Số lượng/thùng' phải lớn hơn 0");
 
                 // Check sản phẩm tồn tại
                 if (!productDict.ContainsKey(productCode))
-                    errors.Add($"Sản phẩm '{productCode}' không tồn tại trong hệ thống");
+                    rowErrors.Add($"Sản phẩm '{productCode}' không tồn tại trong hệ thống");
 
                 // Check PO + Product trùng
                 if (productDict.TryGetValue(productCode, out var product) &&
                     existingKeys.Contains((poNo, product.Id)))
                 {
-                    errors.Add($"Số PO '{poNo}' và Mã sản phẩm '{productCode}' đã có trên hệ thống");
+                    rowErrors.Add($"Số PO '{poNo}' và Mã sản phẩm '{productCode}' đã có trên hệ thống");
                 }
+
+                // Gom tất cả lỗi của dòng lại
+                if (rowErrors.Any())
+                    errors.Add($"Dòng {currentRow}: {string.Join(", ", rowErrors)}");
             }
 
             if (errors.Any())

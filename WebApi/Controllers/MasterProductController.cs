@@ -104,7 +104,14 @@ namespace WebApi.Controllers
             var (isSuccess, errors) = await masterProductService.ImportFromExcelAsync(file);
 
             if (!isSuccess)
-                return BadRequest(new { Message = "Upload thất bại", Errors = errors });
+            {
+                var errorText = string.Join(Environment.NewLine, errors);
+                // Chuyển chuỗi thành byte để trả về file
+                var errorBytes = System.Text.Encoding.UTF8.GetBytes(errorText);
+                var fileName = $"UploadErrors_{DateTime.Now:yyyyMMdd}.txt";
+                // Trả về file txt để client tải
+                return File(errorBytes, "text/plain", fileName);
+            }
 
             return Ok(new { Message = "Upload dữ liệu thành công" });
         }

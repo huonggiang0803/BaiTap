@@ -20,6 +20,7 @@ public class SaleOutService : ISaleOutService
         var response = await _httpClient.GetAsync("api/SaleOut");
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync();
+        // Dữ liệu json sẽ được deserialize thành danh sách SaleOutDto
         return JsonConvert.DeserializeObject<List<SaleOutDto>>(json);
     }
 
@@ -92,15 +93,25 @@ public class SaleOutService : ISaleOutService
         form.Add(streamContent, "file", file.FileName);
 
         var response = await _httpClient.PostAsync("api/SaleOut/upload", form);
-        var json = await response.Content.ReadAsStringAsync();
+        var contentType = response.Content.Headers.ContentType?.MediaType;
 
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            var errorObj = JsonConvert.DeserializeObject<UploadErrorResponse>(json);
-            return (false, errorObj.Errors);
+            if (contentType == "application/json")
+            {
+                return (true, new List<string>());
+            }
+            else if (contentType == "text/plain")
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                var errors = errorText.Split(Environment.NewLine).ToList();
+                return (false, errors);
+            }
         }
 
-        return (true, new List<string>());
+        var json = await response.Content.ReadAsStringAsync();
+        var errorObj = JsonConvert.DeserializeObject<UploadErrorResponse>(json);
+        return (false, errorObj.Errors);
     }
 
     public async Task<byte[]?> DownloadRevenueReportAsync(int startDate, int endDate)

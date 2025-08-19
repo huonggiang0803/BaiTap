@@ -71,16 +71,28 @@ namespace WebApp.Service
             form.Add(streamContent, "file", file.FileName);
 
             var response = await httpClient.PostAsync("MasterProduct/upload", form);
-            var json = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+
+            if (response.IsSuccessStatusCode)
             {
-                var errorObj = JsonConvert.DeserializeObject<UploadErrorResponse>(json);
-                return (false, errorObj.Errors);
+                if (contentType == "application/json") 
+                {
+                    return (true, new List<string>());
+                }
+                else if (contentType == "text/plain") 
+                {
+                    var errorText = await response.Content.ReadAsStringAsync();
+                    var errors = errorText.Split(Environment.NewLine).ToList();
+                    return (false, errors);
+                }
             }
 
-            return (true, new List<string>());
+            var json = await response.Content.ReadAsStringAsync();
+            var errorObj = JsonConvert.DeserializeObject<UploadErrorResponse>(json);
+            return (false, errorObj.Errors);
         }
+
 
         public async Task<bool> CheckDuplicateAsync(string productCode)
         {

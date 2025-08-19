@@ -71,6 +71,14 @@ namespace WebApp.Controllers
                 return PartialView("Create", createDto); 
             }
             var product = await _productService.CreateMasterProductAsync(createDto);
+            if (product != null)
+            {
+                TempData["SuccessMessage"] = "Thêm sản phẩm thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Thêm sản phẩm thất bại!";
+            }
             return Json(new { success = true, productId = product.Id });
         }
         // GET: MasterProduct/ConfirmDelete/5
@@ -111,12 +119,22 @@ namespace WebApp.Controllers
             return PartialView("Edit", updateDto);
         }
         [HttpPost]
-        public async Task<IActionResult>
-            Edit(MasterProductUpdateDto updateDto) 
-        { if (!ModelState.IsValid) return PartialView("Edit", updateDto);
-            var result = await _productService.UpdateMasterProductAsync
-                (updateDto.Id, updateDto); if (result != null) 
-                return Json(new { success = true }); return Json(new { success = false }); 
+        public async Task<IActionResult> Edit (MasterProductUpdateDto updateDto) 
+        { 
+            if (!ModelState.IsValid) return PartialView("Edit", updateDto);
+            var result = await _productService.UpdateMasterProductAsync(updateDto.Id, updateDto);
+            if (result != null)
+            {
+                TempData["SuccessMessage"] = "Cập nhật sản phẩm thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cập nhật sản phẩm thất bại!";
+            }
+
+            if (result != null) 
+                return Json(new { success = true }
+            ); return Json(new { success = false }); 
         }
 
 
@@ -134,42 +152,30 @@ namespace WebApp.Controllers
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "ProductTemplate.xlsx");
         }
-        //[HttpPost]
-        //public async Task<IActionResult> Upload(IFormFile file)
-        //{
-        //    if (file == null || file.Length == 0)
-        //    {
-        //        ModelState.AddModelError("", "Vui lòng chọn file Excel.");
-        //        return View();
-        //    }
 
-        //    var (isSuccess, errors) = await _productService.UploadExcelAsync(file);
-
-        //    if (!isSuccess)
-        //    {
-        //        ViewBag.Errors = errors;
-        //        return View();
-        //    }
-
-        //    TempData["SuccessMessage"] = "Upload thành công!";
-        //    return RedirectToAction("Index");
-        //}
         [HttpPost]
         public async Task<IActionResult> Upload(IFormFile file)
         {
             var (isSuccess, errors) = await _productService.UploadExcelAsync(file);
 
-            if (errors.Any())
+            if (!isSuccess && errors.Any())
             {
-                TempData["UploadErrors"] = string.Join(";", errors);
-            }
-            else
-            {
-                TempData["SuccessMessage"] = "Upload thành công!";
+                // Ghép lỗi thành text
+                var errorText = string.Join(Environment.NewLine, errors);
+                var errorBytes = System.Text.Encoding.UTF8.GetBytes(errorText);
+                var fileName = $"UploadErrors_{DateTime.Now:yyyyMMddHHmmss}.txt";
+
+                // Hiển thị thông báo đơn giản
+                TempData["ErrorMessage"] = "Upload thất bại! Vui lòng tải file lỗi để kiểm tra chi tiết.";
+
+                // Trả về file txt cho user tải
+                return File(errorBytes, "text/plain", fileName);
             }
 
+            TempData["SuccessMessage"] = "Upload thành công!";
             return RedirectToAction("Index");
         }
+
 
     }
 }

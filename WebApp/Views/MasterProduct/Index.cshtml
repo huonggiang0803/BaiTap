@@ -2,17 +2,7 @@
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
 }
-@if (TempData["UploadErrors"] != null)
-{
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var error in TempData["UploadErrors"].ToString().Split(";"))
-            {
-                <li>@error</li>
-            }
-        </ul>
-    </div>
-}
+
 <div class="container mt-4">
     <h2>@ViewData["Title"]</h2>
 
@@ -31,7 +21,17 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
-
+    @if (TempData["UploadErrors"] != null)
+    {
+        <div class="alert alert-danger">
+            <ul>
+                @foreach (var error in TempData["UploadErrors"].ToString().Split(";"))
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
     <!-- Form tìm kiếm -->
     <form method="get" class="row mb-3">
         <div class="col-md-3">

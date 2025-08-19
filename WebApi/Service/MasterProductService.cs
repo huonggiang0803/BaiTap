@@ -198,40 +198,58 @@ namespace WebApi.Service
             stream.Position = 0;
 
             using var workbook = new XLWorkbook(stream);
-            var worksheet = workbook.Worksheet(1); 
-            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); 
+            var worksheet = workbook.Worksheet(1);
+            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // bỏ dòng tiêu đề
 
             foreach (var row in rows)
             {
+                var rowNumber = row.RowNumber(); // lấy số dòng trong Excel
                 var productCode = row.Cell(1).GetString().Trim();
                 var productName = row.Cell(2).GetString().Trim();
                 var unit = row.Cell(3).GetString().Trim();
                 var specification = row.Cell(4).GetString().Trim();
-                var quantityPerBox = row.Cell(5).GetString().Trim();
-                var productWeight = row.Cell(6).GetString().Trim();
+                var quantityPerBoxStr = row.Cell(5).GetString().Trim();
+                var productWeightStr = row.Cell(6).GetString().Trim();
+
+                var rowErrors = new List<string>();
 
                 // Kiểm tra không để trống
                 if (string.IsNullOrWhiteSpace(productCode))
-                    errors.Add($"Trường 'Mã sản phẩm' không được để trống");
+                    rowErrors.Add("Trường 'Mã sản phẩm' không được để trống");
                 if (string.IsNullOrWhiteSpace(productName))
-                    errors.Add($"Trường 'Tên sản phẩm' không được để trống");
+                    rowErrors.Add("Trường 'Tên sản phẩm' không được để trống");
                 if (string.IsNullOrWhiteSpace(unit))
-                    errors.Add($"Trường 'Đơn vị' không được để trống");
+                    rowErrors.Add("Trường 'Đơn vị' không được để trống");
                 if (string.IsNullOrWhiteSpace(specification))
-                    errors.Add($"Trường 'Quy cách' không được để trống");
-                if (string.IsNullOrWhiteSpace(quantityPerBox))
-                    errors.Add($"Trường 'Số lượng/Thùng' không được để trống");
-                if (string.IsNullOrWhiteSpace(productWeight))
-                    errors.Add($"Trường 'Trọng lượng' không được để trống");
+                    rowErrors.Add("Trường 'Quy cách' không được để trống");
+                if (string.IsNullOrWhiteSpace(quantityPerBoxStr))
+                    rowErrors.Add("Trường 'Số lượng/Thùng' không được để trống");
+                if (string.IsNullOrWhiteSpace(productWeightStr))
+                    rowErrors.Add("Trường 'Trọng lượng' không được để trống");
+
+                // Kiểm tra kiểu dữ liệu decimal
+                if (!string.IsNullOrWhiteSpace(quantityPerBoxStr) && !decimal.TryParse(quantityPerBoxStr, out _))
+                    rowErrors.Add("Trường 'Số lượng/Thùng' phải là số hợp lệ");
+                if (!string.IsNullOrWhiteSpace(productWeightStr) && !decimal.TryParse(productWeightStr, out _))
+                    rowErrors.Add("Trường 'Trọng lượng' phải là số hợp lệ");
 
                 // Kiểm tra trùng mã sản phẩm trong DB
-                if (await dbContext.MasterProducts.AnyAsync(p => p.ProductCode == productCode))
-                    errors.Add($"Dòng {row.RowNumber()}: Mã sản phẩm '{productCode}' đã có trên hệ thống");
+                if (!string.IsNullOrWhiteSpace(productCode) &&
+                    await dbContext.MasterProducts.AnyAsync(p => p.ProductCode == productCode))
+                {
+                    rowErrors.Add($"Mã sản phẩm '{productCode}' đã có trên hệ thống");
+                }
+
+                // Nếu có lỗi của dòng, gom thành 1 chuỗi và thêm vào errors
+                if (rowErrors.Any())
+                    errors.Add($"Dòng {rowNumber}: {string.Join(", ", rowErrors)}");
             }
 
+            // Nếu có lỗi, trả về luôn mà không thêm dữ liệu
             if (errors.Any())
                 return (false, errors);
 
+            // Thêm dữ liệu vào DB
             foreach (var row in rows)
             {
                 var product = new MasterProduct
@@ -251,6 +269,7 @@ namespace WebApi.Service
             await dbContext.SaveChangesAsync();
             return (true, errors);
         }
+
     }
 }
 
